@@ -1,6 +1,6 @@
 # MaluDB — Requirements
 
-This document is the authoritative roadmap requirements specification for **MaluDB**, the memory DBMS proposed in [`white-paper.md`](white-paper.md). The white paper is the conceptual reference; this document is what the implementation must satisfy. [`release-1.0-requirements.md`](release-1.0-requirements.md) narrows the first field-testable release scope.
+This document is the authoritative roadmap requirements specification for **MaluDB**, the memory DBMS for long-term institutional memory, human–AI knowledge sharing, and contextual recall. It is the canonical statement of what the implementation must satisfy.
 
 MaluDB is a **database management system for long-term institutional memory, human-AI knowledge sharing, and contextual recall**. It treats memories as first-class data objects governed by a single coherent DBMS rather than glued together from polyglot stores. The initial implementation language is **C**. The base platform is **PostgreSQL 17** on **Ubuntu 24.04 LTS**. The system extends PostgreSQL through C extensions, in-database SQL/PL/pgSQL objects, and external services where appropriate; it does not fork PostgreSQL in R1.0.
 
@@ -14,7 +14,7 @@ Normative language is intentional: **MUST** defines requirements required for co
 
 ### 1.1 Version Release 1.0 scope
 
-In this document, **Version Release 1.0** or **R1.0** means the first releasable MaluDB DBMS slice. R1.0 is intentionally narrower than the complete institutional-memory roadmap: it proves the PostgreSQL foundation, DB-managed model sessions, short-term session context, and a database-native MCP-compatible listener. The detailed acceptance contract lives in [`release-1.0-requirements.md`](release-1.0-requirements.md).
+In this document, **Version Release 1.0** or **R1.0** means the first releasable MaluDB DBMS slice. R1.0 is intentionally narrower than the complete institutional-memory roadmap: it proves the PostgreSQL foundation, DB-managed model sessions, short-term session context, and a database-native MCP-compatible listener.
 
 R1.0 MUST include:
 
@@ -67,7 +67,7 @@ After R1.0, the roadmap expands toward the full MaluDB memory DBMS:
 
 **Version 3** (or **V3**) is the post-`v2.0.0-alpha` release that turns the shipped memory DBMS into a self-hostable platform with the developer and operator ergonomics expected of a modern data product. V3 takes Supabase's *platform-coherence* lesson — one curated stack of HTTP APIs, identity, storage, realtime, jobs, observability, and environment tooling — and applies it to the MaluDB memory model. V3 does **not** clone Supabase's product surface and does **not** revise the memory model, provenance, bitemporal discipline, three-stage authorization, or atomic multi-model writes that the rest of this document specifies.
 
-The authoritative V3 ticket-level requirements live in [`version3-requirements.md`](version3-requirements.md). The authoritative V3 implementation plan, including per-ticket deliverables, migration assignments, and acceptance criteria, lives in [`version3-plan.md`](version3-plan.md). This document remains the canonical roadmap and is updated when V3 scope changes; the V3 docs MUST NOT drift from §1.5, §8, and §9.
+The authoritative V3 ticket-level requirements and implementation plan are captured in §1.5, §8, and §9 of this document. This is the canonical V3 roadmap and is updated when V3 scope changes.
 
 V3 MUST deliver, at minimum:
 
@@ -628,7 +628,7 @@ No GPL-only or AGPL dependency may be linked into the extension `.so` or require
 
 The roadmap is intentionally narrow at the start. Each stage delivers something usable and testable before scope expands. **Do not implement Stage N+1 features inside Stage N** even when the requirements above call for them — early stages establish the substrate; later stages layer the memory semantics on top.
 
-For Release 1.0, Stage 1 is hardened into three implementation phases: Stage 1 core PostgreSQL substrate, Stage 1.5 model runtime and Session Context, and Stage 1.6 MC2DB network listener. Together these constitute the first field-testable release described in [`release-1.0-requirements.md`](release-1.0-requirements.md).
+For Release 1.0, Stage 1 is hardened into three implementation phases: Stage 1 core PostgreSQL substrate, Stage 1.5 model runtime and Session Context, and Stage 1.6 MC2DB network listener. Together these constitute the first field-testable release.
 
 ### Stage 1 — Memory Core framework (PostgreSQL + pgvector relational foundation)
 
@@ -744,7 +744,7 @@ Stage 1.6 done when: a local or cloud model client can connect to the MC2DB list
 
 ### Stages 8–15 — Version 3 platform ergonomics
 
-Stages 8 through 15 implement Version 3 (§1.5). Each stage corresponds to one or more `V3-*` tickets defined in [`version3-requirements.md`](version3-requirements.md), with per-ticket deliverables and migration assignments in [`version3-plan.md`](version3-plan.md). Stage-boundary discipline still applies: a Stage N+1 ticket MUST NOT install objects assigned to Stage N+2 even if the requirement is named in §1.5.
+Stages 8 through 15 implement Version 3 (§1.5). Each stage corresponds to one or more `V3-*` tickets with their own per-ticket deliverables and migration assignments. Stage-boundary discipline still applies: a Stage N+1 ticket MUST NOT install objects assigned to Stage N+2 even if the requirement is named in §1.5.
 
 Doctrine that V3 stages MUST preserve:
 
@@ -911,4 +911,4 @@ These are explicitly **not** decided in R1.0; the implementation MUST keep them 
 
 ---
 
-*This document derives from [`white-paper.md`](white-paper.md). When a conflict arises between this document and the white paper, the white paper prevails for conceptual intent; this document prevails for implementation requirements. Both must be updated together when scope changes.*
+*This document is the canonical statement of MaluDB implementation requirements.*

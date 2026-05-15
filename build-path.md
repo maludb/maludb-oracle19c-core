@@ -1,8 +1,8 @@
 # MaluDB Build Path
 
-This is a living build path for MaluDB. It records the staged implementation order, verification gates, and reusable prompts needed to build the DBMS from the white paper through the PostgreSQL extension, memory object model, retrieval layer, model integration, MCP interface, and hardening work. [`release-1.0-build-plan.md`](release-1.0-build-plan.md) is the focused implementation plan for the first field-testable release.
+This is a living build path for MaluDB. It records the staged implementation order, verification gates, and reusable prompts needed to build the DBMS through the PostgreSQL extension, memory object model, retrieval layer, model integration, MCP interface, and hardening work.
 
-The build path is subordinate to `requirements.md`. If this file conflicts with `requirements.md`, update this file or raise the conflict. Do not modify `white-paper.md` unless the project owner explicitly asks.
+The build path is subordinate to `requirements.md`. If this file conflicts with `requirements.md`, update this file or raise the conflict.
 
 ## 1. Operating Rules
 
