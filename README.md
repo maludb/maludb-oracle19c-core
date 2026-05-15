@@ -14,12 +14,12 @@ provision PostgreSQL manually.
 
 | | |
 |---|---|
-| Version | **0.71.0** (extension) — tagged `v4.0.0-rc.1` (V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. Awaiting a fresh-VM field test for v4.0.0 GA.) |
+| Version | **0.71.0** (extension) — tagged `v4.0.0` (GA, 2026-05-15). V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
 | Test suite | **74/74 pg_regress** on PG 17, 7/7 maludb-restd smoke, 4/4 maludb-realtimed smoke, 11/11 maludb CLI smoke, 12/12 libmaludb v0.2 smoke, 14/14 maludb-pageindexd parser smoke |
 | Drivers | Python, Node.js, PHP, C — all four validated against the live extension |
 | External services | `maludb_modeld` (model gateway) + `maludb_mc2dbd` (database MCP listener) + `mcp-broker` (external-tool MCP broker) + `maludb-restd` (V3 REST gateway) + `maludb-realtimed` (V3 SSE event stream) + `maludb-pageindexd` (V4 PageIndex / ChatIndex builder) |
-| Roadmap | `requirements.md` §9 Stages 1–15 shipped; Stage 16+ (Version 4 PageIndex / ChatIndex) underway — see [`version4-pageindex-plan.md`](version4-pageindex-plan.md) |
-| Stage | Stage 1–15 shipped (V3 GA + v3.1.0 follow-up); V4 alpha.2 — PageIndex promotion path + builder worker land |
+| Roadmap | `requirements.md` §9 Stages 1–16+ shipped through V4 GA — see [`version4-pageindex-plan.md`](version4-pageindex-plan.md) |
+| Stage | Stages 1–15 (V3 GA + v3.1.0 follow-up) and Stage 16+ (V4 PageIndex / ChatIndex) shipped |
 | License | PostgreSQL License (BSD-style) |
 | Platforms | Ubuntu 24.04 LTS, x86_64 + arm64 |
 
@@ -89,9 +89,7 @@ Day-2 operations are in [docs/admin-guide.md](docs/admin-guide.md).
 ## Documents
 
 - [`requirements.md`](requirements.md) — what the system must satisfy.
-- [`white-paper.md`](white-paper.md) — the conceptual reference (frozen).
-- [`version3-requirements.md`](version3-requirements.md) — Version 3 ticket-level scope.
-- [`version3-plan.md`](version3-plan.md) — Version 3 implementation plan.
+- [`version4-pageindex-plan.md`](version4-pageindex-plan.md) — Version 4 PageIndex / ChatIndex implementation plan.
 - [`docs/install.md`](docs/install.md) — operator-grade install playbook.
 - [`docs/getting-started.md`](docs/getting-started.md) — first-time walkthrough.
 - [`docs/admin-guide.md`](docs/admin-guide.md) — backups, audit queries, lifecycle.
@@ -116,8 +114,9 @@ The project ships in stages (`requirements.md` §9):
 - **Stage 6 (in-DB)** ✅ — Local node sync, model registry migration, advanced MC2DB tools.
 - **Stage 6 (broker)** ✅ — External MCP broker reference (`services/mcp-broker` v0.1.0).
 - **Stage 6 (drivers)** ✅ — C / Python / Node.js / PHP SDKs (v0.1.0 each). C SDK v0.2.0 (pool / skill / node wrappers) is a V3-SDK-01 follow-up.
-- **Stage 7** ✅ — Hardening: benchmarks, security review, docs, deb packaging, **public alpha tagged**.
-- **Stages 8–15 (Version 3)** 🚧 — Platform-ergonomics track: identity/secrets, REST gateway + CLI + SDK parity, durable queue + cron, verbatim source archive v1, realtime + presence, vector/retrieval polish, metrics + log drains + backup/PITR + preview envs + replicas. See [`version3-requirements.md`](version3-requirements.md) and [`version3-plan.md`](version3-plan.md).
+- **Stage 7** ✅ — Hardening: benchmarks, security review, docs, deb packaging, public alpha tagged.
+- **Stages 8–15 (Version 3)** ✅ — Platform-ergonomics track: identity/secrets, REST gateway + CLI + SDK parity, durable queue + cron, verbatim source archive v1, realtime + presence, vector/retrieval polish, metrics + log drains + backup/PITR + preview envs + replicas. Shipped as `v3.0.0` and `v3.1.0`.
+- **Stages 16+ (Version 4)** ✅ — PageIndex / ChatIndex as governed memory surfaces over the Verbatim Source Archive. Reachable through every external surface (SQL / MC2DB / REST / CLI / 4-language SDK). Shipped as `v4.0.0`. See [`version4-pageindex-plan.md`](version4-pageindex-plan.md).
 
 ## Contributing
 
