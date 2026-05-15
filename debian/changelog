@@ -1,0 +1,62 @@
+maludb (0.41.0-1) noble; urgency=medium
+
+  * v2.0.0-alpha.1 point release. Extension 0.41.0; 51/51 pg_regress.
+  * S7-2.a — owner_schema + RLS on malu$mc2db_invocation (closes
+    docs/security-review.md finding #2).
+  * S7-2.c — scripts/maludb-bootstrap now preloads pgaudit and sets
+    pgaudit.log via pg_conftool; scripts/maludb-validate confirms
+    (closes finding #3).
+  * Python driver SDK landed under drivers/python/ (not in the .deb).
+
+ -- Edward Honour <edward.honour@gmail.com>  Wed, 13 May 2026 11:50:00 +0000
+
+maludb (0.40.0-1) noble; urgency=medium
+
+  * v1.6.0 release surface. Extension upgrade chain
+    0.1.0 → 0.2.0 → … → 0.40.0 (40 migration steps).
+  * Stages 2..6 in-DB feature set landed:
+    - Stage 2 memory object model + derivation ledger.
+    - Stage 3 bitemporal + supersession + SVPOR + MAUT + lifecycle.
+    - Stage 4 retrieval planner + FTS/graph/hints + 3-stage authz.
+    - Stage 5 workflow extraction + skill runtime + active pools +
+      episode replay.
+    - Stage 6 local-node sync + model registry blue-green +
+      adapter alignment + advanced MC2DB tools.
+  * Stage 7 hardening underway: benchmark baseline, security review,
+    getting-started + admin docs + four end-to-end examples.
+  * 50/50 pg_regress tests pass on PG 17.
+
+ -- Edward Honour <edward.honour@gmail.com>  Wed, 13 May 2026 03:30:00 +0000
+
+maludb (0.4.0-1) noble; urgency=medium
+
+  * v1.0.0-rc1 release surface.  Extension upgrade chain
+    0.1.0 → 0.2.0 → 0.3.0 → 0.4.0.
+  * postgresql-17-maludb-core: R1.0 + selected R1.1 alphas.
+    - R1.1-2 mcp_proxy dispatcher catalog (listener wires it).
+    - R1.1-3 http_endpoint dispatcher schema (endpoint_url,
+      http_method, static_headers, auth_type/token columns).
+    - R1.1-7 LLM-role + row-level-security surface (six roles,
+      RLS on the eight LLM-tenancy tables, current_account_id()
+      GUC helper).
+    - R1.1-12/13/14 compartmentalized vector substrate, C top-K
+      heap, maludb.memory.search.exact MC2DB tool.
+  * maludb-mc2dbd: full four-dispatcher tool surface
+    (sql_function + external_exec + mcp_proxy + http_endpoint).
+    - Prometheus /metrics endpoint.
+    - 27 service tests green on a clean Ubuntu 24.04 VM.
+  * Build deps now include libcurl4-openssl-dev (for mcp_proxy +
+    http_endpoint) and libgnutls28-dev (TLS in the listener).
+
+ -- Edward Honour <edward.honour@gmail.com>  Tue, 12 May 2026 21:30:00 +0000
+
+maludb (0.1.0-1) noble; urgency=medium
+
+  * Initial Debian/Ubuntu packaging — release candidate for v1.0.0-rc1.
+  * postgresql-17-maludb-core: MaluDB R1.0 + R1.1-12 + R1.1-13.
+    - Stage 1 schema, MC2DB tool registry, model gateway hooks.
+    - Compartmentalized vector substrate (BYTEA float32, top-K heap).
+  * maludb-mc2dbd: MC2DB listener with R1.1-1 external_exec dispatcher
+    and R1.1-14 maludb.memory.search.exact tool seeded.
+
+ -- Edward Honour <edward.honour@gmail.com>  Wed, 06 May 2026 00:00:00 +0000
