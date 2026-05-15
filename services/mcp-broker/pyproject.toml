@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "PostgreSQL" }
 requires-python = ">=3.10"
 authors = [
-    { name = "Edward Honour", email = "edward.honour@gmail.com" }
+    { name = "Edward Honour", email = "ed@maludb.org" }
 ]
 keywords = ["mcp", "maludb", "broker", "tools"]
 classifiers = [

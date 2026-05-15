@@ -83,7 +83,7 @@ Expect `PostgreSQL 17.x`, `active`, and `psql (PostgreSQL) 17.x`.
 ## §4. Clone the repo at the V3 RC tag
 
 ```bash
-git clone https://git.skilliks.com/ehonour/maludb-core.git
+git clone https://github.com/maludb/maludb-core.git
 ```
 
 ```bash

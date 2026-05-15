@@ -96,12 +96,9 @@ sudo rm /etc/sudoers.d/$USER-fieldtest
 ### 2.1 Clone
 
 ```bash
-git clone <maludb-core-url> ~/maludb-core
+git clone https://github.com/maludb/maludb-core.git ~/maludb-core
 cd ~/maludb-core
 ```
-
-If you're cloning from `git.skilliks.com` (the project's internal
-remote), set up SSH access first or use the HTTPS URL.
 
 ### 2.2 Initialize submodules
 

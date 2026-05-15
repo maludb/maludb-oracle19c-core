@@ -9,7 +9,7 @@ description = "MaluDB realtime gateway — SSE stream over malu$event with V3-AU
 readme = "README.md"
 license = { text = "PostgreSQL" }
 requires-python = ">=3.10"
-authors = [{ name = "Edward Honour", email = "edward.honour@gmail.com" }]
+authors = [{ name = "Edward Honour", email = "ed@maludb.org" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: System Administrators",

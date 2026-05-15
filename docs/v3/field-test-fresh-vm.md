@@ -87,13 +87,14 @@ service active.
 ## 4. Clone the repo at the V3 RC tag
 
 ```bash
-git clone https://git.skilliks.com/ehonour/maludb-core.git
+git clone https://github.com/maludb/maludb-core.git
 cd maludb-core
 git checkout v3.0.0-rc.1
 ```
 
-> If your remote is different, substitute the URL but pin to
-> `v3.0.0-rc.1`. The procedure below assumes you are in the repo
+> If you have a mirror of this repo elsewhere, substitute the URL
+> but pin to `v3.0.0-rc.1`. The procedure below assumes you are in
+> the repo
 > root.
 
 ## 5. Build + install the extension

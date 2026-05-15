@@ -4,7 +4,7 @@
     "type": "library",
     "license": "PostgreSQL",
     "authors": [
-        { "name": "Edward Honour", "email": "edward.honour@gmail.com" }
+        { "name": "Edward Honour", "email": "ed@maludb.org" }
     ],
     "homepage": "https://github.com/edwardhonour/maludb-core",
     "keywords": ["postgresql", "memory", "llm", "rag", "knowledge", "audit", "maludb"],

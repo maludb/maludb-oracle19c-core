@@ -8,7 +8,7 @@ maludb (0.41.0-1) noble; urgency=medium
     (closes finding #3).
   * Python driver SDK landed under drivers/python/ (not in the .deb).
 
- -- Edward Honour <edward.honour@gmail.com>  Wed, 13 May 2026 11:50:00 +0000
+ -- Edward Honour <ed@maludb.org>  Wed, 13 May 2026 11:50:00 +0000
 
 maludb (0.40.0-1) noble; urgency=medium
 
@@ -26,7 +26,7 @@ maludb (0.40.0-1) noble; urgency=medium
     getting-started + admin docs + four end-to-end examples.
   * 50/50 pg_regress tests pass on PG 17.
 
- -- Edward Honour <edward.honour@gmail.com>  Wed, 13 May 2026 03:30:00 +0000
+ -- Edward Honour <ed@maludb.org>  Wed, 13 May 2026 03:30:00 +0000
 
 maludb (0.4.0-1) noble; urgency=medium
 
@@ -48,7 +48,7 @@ maludb (0.4.0-1) noble; urgency=medium
   * Build deps now include libcurl4-openssl-dev (for mcp_proxy +
     http_endpoint) and libgnutls28-dev (TLS in the listener).
 
- -- Edward Honour <edward.honour@gmail.com>  Tue, 12 May 2026 21:30:00 +0000
+ -- Edward Honour <ed@maludb.org>  Tue, 12 May 2026 21:30:00 +0000
 
 maludb (0.1.0-1) noble; urgency=medium
 
@@ -59,4 +59,4 @@ maludb (0.1.0-1) noble; urgency=medium
   * maludb-mc2dbd: MC2DB listener with R1.1-1 external_exec dispatcher
     and R1.1-14 maludb.memory.search.exact tool seeded.
 
- -- Edward Honour <edward.honour@gmail.com>  Wed, 06 May 2026 00:00:00 +0000
+ -- Edward Honour <ed@maludb.org>  Wed, 06 May 2026 00:00:00 +0000

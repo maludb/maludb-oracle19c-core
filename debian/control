@@ -1,7 +1,7 @@
 Source: maludb
 Section: database
 Priority: optional
-Maintainer: Edward Honour <edward.honour@gmail.com>
+Maintainer: Edward Honour <ed@maludb.org>
 Build-Depends: debhelper-compat (= 13),
                postgresql-server-dev-all (>= 217~),
                postgresql-server-dev-16,

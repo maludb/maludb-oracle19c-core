@@ -87,7 +87,7 @@ Expect `PostgreSQL 17.x`, `active`, and `psql (PostgreSQL) 17.x`.
 ## §4. Clone the repo at the V4 RC tag
 
 ```bash
-git clone https://git.skilliks.com/ehonour/maludb-core.git
+git clone https://github.com/maludb/maludb-core.git
 ```
 
 ```bash
@@ -443,12 +443,11 @@ git push -u origin "ga-gate-v4-${HOST}-${TS}"
 
 ### §14.1 Open the GA-gate pull request
 
-After the push, the remote (Gitea at `git.skilliks.com`) prints
-a "Create new pull request" URL. If you missed it, find it
-manually:
+After the push, the remote prints a "Create new pull request"
+URL. If you missed it, find it manually:
 
 ```bash
-echo "https://git.skilliks.com/ehonour/maludb-core/compare/main...ga-gate-v4-${HOST}-${TS}"
+echo "https://github.com/maludb/maludb-core/compare/main...ga-gate-v4-${HOST}-${TS}"
 ```
 
 Open that URL in a browser.
@@ -460,7 +459,7 @@ V4 GA gate: fresh-VM field-test on <HOST>
 ```
 
 …with `<HOST>` substituted (the literal hostname, e.g.
-`maludb24-02`).
+`host01`).
 
 **PR description (paste this template, then fill the bracketed
 spots):**

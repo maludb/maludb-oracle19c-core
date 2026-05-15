@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: maludb
-Upstream-Contact: Edward Honour <edward.honour@gmail.com>
+Upstream-Contact: Edward Honour <ed@maludb.org>
 Source: https://github.com/edward-honour/maludb-core
 
 Files: *

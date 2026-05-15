@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Node.js / TypeScript driver for MaluDB — a memory DBMS on PostgreSQL",
   "license": "PostgreSQL",
-  "author": "Edward Honour <edward.honour@gmail.com>",
+  "author": "Edward Honour <ed@maludb.org>",
   "homepage": "https://github.com/edwardhonour/maludb-core",
   "repository": {
     "type": "git",
