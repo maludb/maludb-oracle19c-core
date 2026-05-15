@@ -6,9 +6,7 @@ Rebased: 2026-05-14 — §4.1 migration baseline moved from `0.57.0` (v3.0.0 RC)
 This document is the **implementation plan** for the first Version 4 track: PageIndex and ChatIndex as governed memory surfaces over the existing Verbatim Source Archive. It is the operational companion to:
 
 - [`requirements.md`](requirements.md) — canonical roadmap; V4 will add a §1.6 / §9 Stages 16+ block when this plan is accepted.
-- [`version3-plan.md`](version3-plan.md) — the V3 plan that this track builds on.
 - [`docs/pageindex/PageIndex_Technology_Guide.md`](docs/pageindex/PageIndex_Technology_Guide.md) — conceptual brief.
-- [`20260514-status.md`](20260514-status.md) — project snapshot used during the feasibility exploration.
 - Upstream references: `https://github.com/VectifyAI/PageIndex` (MIT), `https://github.com/VectifyAI/ChatIndex` (Apache-2.0).
 
 V4 normative scope decisions live here. The implementation plan in §8 says **how, in what order, in which files, against which migration versions, and against which tests**. When this plan and `requirements.md` disagree, `requirements.md` wins for normative scope; this document is updated to match.
@@ -199,7 +197,7 @@ No new C-level extension dependency. No new PostgreSQL extension dependency. `ma
 
 ## 7. Doctrine V4 must preserve
 
-The nine invariants in [`20260514-status.md`](20260514-status.md) §5 apply unchanged. The V4-specific applications:
+The system's nine foundational invariants apply unchanged. The V4-specific applications:
 
 1. **Corrections never silently overwrite history.** A re-derived tree under a new model alias closes the prior tree (`build_status = 'superseded'`) and opens a new `malu$page_index_tree` row; node-level changes go through the Temporal Supersession Engine.
 2. **Provenance is mandatory.** Every internal node summary, every leaf summary, every structure-analysis decision, and every incremental ChatIndex append writes a `malu$derivation_ledger` entry with model alias, prompt template, input hash, output hash, and policy version.

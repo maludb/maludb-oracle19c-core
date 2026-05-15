@@ -70,9 +70,8 @@ These memory-DBMS surfaces are user-facing today, not roadmap:
 
 ### 1.3 What's NOT in 2.0.0-alpha
 
-Version 3 is the platform-ergonomics track scoped in
-[`version3-requirements.md`](../version3-requirements.md) and
-[`version3-plan.md`](../version3-plan.md). The following are V3 surfaces (not
+Version 3 is the platform-ergonomics track scoped in §1.5 and §9 of
+[`requirements.md`](../requirements.md). The following are V3 surfaces (not
 shipped today): first-party API tokens/JWT, governed secret store, curated REST
 gateway, durable queue, scheduler, verbatim source archive v1 with object
 storage adapters, memory event stream + presence, vector metadata filters and
@@ -748,7 +747,7 @@ it auto-routes today:
 
 This is **single-layer NSW**, not multilevel HNSW. Functionally similar at
 small-to-medium compartment sizes; multilevel HNSW is a deferred upgrade. The
-V3-VEC-01 ticket (see [`version3-plan.md`](../version3-plan.md)) decides
+V3-VEC-01 ticket decides
 whether v3 upgrades the local graph to multilevel HNSW or delegates large-
 compartment ANN to `pgvector` HNSW with exact search preserved for tests.
 
@@ -1174,11 +1173,6 @@ adapters, realtime, metrics, log drains, backups, preview environments).
 Authoritative V3 documents:
 
 - [`requirements.md`](../requirements.md) §1.5 and §9 Stages 8–15.
-- [`version3-requirements.md`](../version3-requirements.md) — V3 themes (A–G)
-  and ticket-level scope (V3-DOC-01 … V3-REPL-01).
-- [`version3-plan.md`](../version3-plan.md) — implementation plan, per-ticket
-  deliverables, migration assignments (`0.42.0` → `0.57.0`), tag plan
-  (`v3.0.0-alpha.1` … `v3.0.0`).
 
 V3 stage map:
 
@@ -1213,7 +1207,4 @@ not drift between `maludb_core.control`, [`README.md`](../README.md),
 - [Model Gateway Contract](maludb-modeld-contract.md)
 - [Post-Install Hardening](post-install-hardening.md)
 - [Monitoring](monitoring.md)
-- [Release 1.0 Requirements](../release-1.0-requirements.md)
 - [Full Roadmap Requirements](../requirements.md)
-- [Version 3 Requirements](../version3-requirements.md)
-- [Version 3 Implementation Plan](../version3-plan.md)

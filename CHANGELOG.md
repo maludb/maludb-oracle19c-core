@@ -1249,9 +1249,9 @@ stays at **0.41.0**, no migration added.
   Stages 8–15 covering V3-DOC-01 … V3-REPL-01. §8.1 *V3 dependency
   candidates* table for `pg_cron`, `pgmq`, PostgREST, `pgsodium`,
   PgBouncer, S3 SDK, OTLP HTTP. §10 V3-specific open decisions.
-- [`version3-requirements.md`](version3-requirements.md) — V3
+- `version3-requirements.md` — V3
   themes (A–G) and ticket-level scope.
-- [`version3-plan.md`](version3-plan.md) — V3 implementation plan:
+- `version3-plan.md` — V3 implementation plan:
   per-ticket deliverables, dependency graph, migration assignments
   (`0.42.0` → `0.57.0`), tag plan (`v3.0.0-alpha.1` … `v3.0.0`),
   license gates, cross-cutting engineering rules, risks, done-when.
