@@ -19,13 +19,25 @@ target database.
 ```bash
 sudo -u postgres createdb tutorial
 sudo -u postgres psql -d tutorial -c "CREATE EXTENSION maludb_core CASCADE"
-psql -d tutorial -c "SET search_path = maludb_core, public;"
 ```
 
 The `CASCADE` pulls in `vector`, `btree_gist`, and `pg_trgm`
 automatically.
 
 ## 1. Record the source
+
+Start an interactive `psql` session against the tutorial database and
+set the schema search path. Keep this `psql` session open for steps 1
+through 6; the later SQL snippets are meant to be pasted at the
+`tutorial=>` prompt.
+
+```bash
+psql -d tutorial
+```
+
+```sql
+SET search_path = maludb_core, public;
+```
 
 Every claim must point back to evidence. Start by registering the
 source package the claim will cite. A "source package" is any

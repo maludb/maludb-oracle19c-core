@@ -415,38 +415,197 @@ sudo systemctl restart maludb-mc2dbd     # or maludb-modeld
 
 ### 6.4 Enabling bearer-token authentication
 
+Generate a token and write it directly into the listener's systemd
+environment file:
+
 ```bash
 TOKEN=$(openssl rand -base64 48)
-sudoedit /etc/maludb/maludb-mc2dbd.conf
-# uncomment / set:
-#   BEARER_TOKEN="<paste $TOKEN>"
-sudo systemctl restart maludb-mc2dbd
 
-# now clients must authenticate:
+sudo cp /etc/maludb/maludb-mc2dbd.conf /etc/maludb/maludb-mc2dbd.conf.bak
+sudo awk -v token="$TOKEN" '
+  BEGIN { done=0 }
+  /^#?[[:space:]]*BEARER_TOKEN=/ {
+    print "BEARER_TOKEN=\"" token "\""
+    done=1
+    next
+  }
+  { print }
+  END {
+    if (!done) print "BEARER_TOKEN=\"" token "\""
+  }
+' /etc/maludb/maludb-mc2dbd.conf.bak \
+  | sudo tee /etc/maludb/maludb-mc2dbd.conf >/dev/null
+sudo chown root:maludb /etc/maludb/maludb-mc2dbd.conf
+sudo chmod 0640 /etc/maludb/maludb-mc2dbd.conf
+
+sudo systemctl restart maludb-mc2dbd
+```
+
+Confirm the file contains a token and the listener is still running:
+
+```bash
+sudo awk -F= '/^BEARER_TOKEN=/{print "BEARER_TOKEN=<set>"}' /etc/maludb/maludb-mc2dbd.conf
+systemctl status maludb-mc2dbd --no-pager
+```
+
+Pass criterion: the first command prints `BEARER_TOKEN=<set>`, and
+`systemctl status` shows `Active: active (running)`.
+
+Unauthenticated requests should now fail:
+
+```bash
+curl -i -sS -X POST http://127.0.0.1:5329/ \
+    -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | head
+```
+
+Expected: `HTTP/1.1 401 Unauthorized`.
+
+Authenticated requests should still work:
+
+```bash
 curl -fsS -X POST http://127.0.0.1:5329/ \
     -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' \
     -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | jq .
 ```
 
-### 6.5 Enabling native TLS
+To edit manually instead, set this line in
+`/etc/maludb/maludb-mc2dbd.conf`:
 
-The bootstrap generates a self-signed dev cert. To switch the listener
-to HTTPS:
-
-```bash
-sudoedit /etc/maludb/maludb-mc2dbd.conf
-# set:
-#   TLS=true
-#   TLS_CERT=/etc/maludb/tls/server.crt
-#   TLS_KEY=/etc/maludb/tls/server.key
-sudo systemctl restart maludb-mc2dbd
-
-curl -fsSk https://127.0.0.1:5329/healthz   # -k accepts self-signed
+```conf
+BEARER_TOKEN="paste-the-generated-token-here"
 ```
 
-For production, replace the self-signed cert with one from your CA, or
-front the listener with NGINX terminating TLS.
+Then run `sudo systemctl restart maludb-mc2dbd`.
+
+### 6.5 Enabling native TLS
+
+Native TLS means `maludb_mc2dbd` terminates HTTPS itself. The listener
+keeps the same bind address and port, but clients must switch from
+`http://127.0.0.1:5329` to `https://127.0.0.1:5329`. The bootstrap
+creates a self-signed development certificate at
+`/etc/maludb/tls/server.crt` and a matching private key at
+`/etc/maludb/tls/server.key`; those files are readable by the
+`maludb_mc2dbd` service user.
+
+Use this path for a single-host or field-test install. For a public
+deployment, either replace the self-signed certificate with one from
+your CA or keep the listener on localhost and put NGINX/HAProxy in
+front to terminate TLS.
+
+First confirm the generated certificate and key exist and are readable
+by the service user:
+
+```bash
+sudo -u maludb_mc2dbd test -r /etc/maludb/tls/server.crt
+sudo -u maludb_mc2dbd test -r /etc/maludb/tls/server.key
+openssl x509 -in /etc/maludb/tls/server.crt -noout -subject -ext subjectAltName
+```
+
+If either `test -r` command fails, regenerate the development
+certificate:
+
+```bash
+sudo ./scripts/maludb-tls-init \
+  --out-dir /etc/maludb/tls \
+  --owner maludb_mc2dbd \
+  --group maludb
+```
+
+Now write the TLS settings directly into the listener's systemd
+environment file:
+
+```bash
+sudo cp /etc/maludb/maludb-mc2dbd.conf /etc/maludb/maludb-mc2dbd.conf.bak
+sudo awk '
+  BEGIN {
+    seen_tls=0
+    seen_cert=0
+    seen_key=0
+  }
+  /^#?[[:space:]]*TLS=/ {
+    print "TLS=true"
+    seen_tls=1
+    next
+  }
+  /^#?[[:space:]]*TLS_CERT=/ {
+    print "TLS_CERT=/etc/maludb/tls/server.crt"
+    seen_cert=1
+    next
+  }
+  /^#?[[:space:]]*TLS_KEY=/ {
+    print "TLS_KEY=/etc/maludb/tls/server.key"
+    seen_key=1
+    next
+  }
+  { print }
+  END {
+    if (!seen_tls) print "TLS=true"
+    if (!seen_cert) print "TLS_CERT=/etc/maludb/tls/server.crt"
+    if (!seen_key) print "TLS_KEY=/etc/maludb/tls/server.key"
+  }
+' /etc/maludb/maludb-mc2dbd.conf.bak \
+  | sudo tee /etc/maludb/maludb-mc2dbd.conf >/dev/null
+sudo chown root:maludb /etc/maludb/maludb-mc2dbd.conf
+sudo chmod 0640 /etc/maludb/maludb-mc2dbd.conf
+
+sudo systemctl restart maludb-mc2dbd
+```
+
+Confirm the file contains the TLS settings and the listener restarted:
+
+```bash
+sudo awk -F= '
+  /^(TLS|TLS_CERT|TLS_KEY)=/ { print }
+' /etc/maludb/maludb-mc2dbd.conf
+systemctl status maludb-mc2dbd --no-pager
+```
+
+Pass criterion: the config printout includes
+`TLS=true`, `TLS_CERT=/etc/maludb/tls/server.crt`, and
+`TLS_KEY=/etc/maludb/tls/server.key`; `systemctl status` shows
+`Active: active (running)`.
+
+Plain HTTP should now fail because the listener expects a TLS
+handshake:
+
+```bash
+curl -i -sS http://127.0.0.1:5329/healthz | head
+```
+
+HTTPS should work. The `-k` flag is required for the bootstrap
+self-signed certificate because it is not trusted by the OS certificate
+store:
+
+```bash
+curl -fsSk https://127.0.0.1:5329/healthz
+```
+
+Expected: `ok`.
+
+If you enabled bearer-token authentication in §6.4, include the token
+on JSON-RPC calls over HTTPS. If you are in a new shell, set `TOKEN`
+to the same value you wrote into `/etc/maludb/maludb-mc2dbd.conf`
+before running this test:
+
+```bash
+curl -fsSk -X POST https://127.0.0.1:5329/ \
+    -H "Authorization: Bearer $TOKEN" \
+    -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | jq .
+```
+
+To edit manually instead, set these lines in
+`/etc/maludb/maludb-mc2dbd.conf`:
+
+```conf
+TLS=true
+TLS_CERT=/etc/maludb/tls/server.crt
+TLS_KEY=/etc/maludb/tls/server.key
+```
+
+Then run `sudo systemctl restart maludb-mc2dbd`.
 
 ---
 
@@ -468,14 +627,51 @@ sudo apt-get install -y cmake
 Then build:
 
 ```bash
-make -C runtime         # CPU build (default — works without GPU)
-# or, on a CUDA host:
+# CPU build: default and recommended for CPU-only hosts.
+# This runs CMake with CMAKE_BUILD_TYPE=Release and GGML_CUDA=OFF.
+make -C runtime
+
+# CUDA build: optional. Use only when the NVIDIA driver and CUDA Toolkit
+# are installed and nvcc is on PATH.
+# This also uses CMAKE_BUILD_TYPE=Release.
 make -C runtime cuda
 ```
 
 The CPU build takes 2–5 minutes on commodity hardware. CUDA builds
 take longer because of the kernel compilation; expect 10+ minutes
 on a fresh checkout.
+
+Common configure output:
+
+```text
+-- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+-- CMAKE_SYSTEM_PROCESSOR: x86_64
+-- GGML_SYSTEM_ARCH: x86
+-- Including CPU backend
+-- x86 detected
+-- Adding CPU backend variant ggml-cpu: -march=native
+```
+
+Those lines are normal. `ccache` is optional; missing `ccache` only
+means rebuilds may be slower.
+
+If you run the optional CUDA build on a host without the CUDA Toolkit,
+CMake may stop with:
+
+```text
+-- Could not find nvcc, please set CUDAToolkit_ROOT.
+CMake Error at ggml/src/ggml-cuda/CMakeLists.txt:267 (message):
+  CUDA Toolkit not found
+```
+
+That error is OK for a CPU-only install. It means only the optional
+CUDA path failed; it does not mean the MaluDB install failed. Continue
+with the CPU build instead:
+
+```bash
+make -C runtime distclean
+make -C runtime BUILD_TYPE=Release
+```
 
 Expected: `third_party/llama.cpp/build/bin/llama-cli` exists and
 prints help when invoked.
@@ -558,57 +754,111 @@ sudo systemctl enable --now maludb-modeld
 systemctl status maludb-modeld --no-pager
 ```
 
-Expected: `Active: active (running)`. The daemon polls every 5
-seconds; if no pending requests exist it idles.
+Expected (truncated):
+
+```text
+● maludb-modeld.service - MaluDB Model Gateway Daemon (R1.0)
+     Loaded: loaded (/etc/systemd/system/maludb-modeld.service; enabled; ...)
+     Active: active (running) since ...
+   Main PID: 12345 (bash)
+      CGroup: /system.slice/maludb-modeld.service
+             ├─12345 bash /usr/local/sbin/maludb_modeld
+             └─12399 sleep 5
+
+... maludb_modeld ... info maludb_modeld starting (poll=5s, llama=/usr/local/bin/llama-cli)
+```
+
+Pass criterion: `Active: active (running)`. `Main PID: ... (bash)` is
+normal; `maludb_modeld` is a shell daemon. A child `sleep 5` process is
+also normal while the daemon is idle between database polls.
+
+If `systemctl status` says some lines were ellipsized, use `-l` or
+read the journal:
+
+```bash
+systemctl status -l maludb-modeld --no-pager
+sudo journalctl -u maludb-modeld -n 50 --no-pager
+```
 
 ### 7.5 End-to-end test through the listener
 
 ```bash
-# Open a session, append context, render, submit, read response
-curl -fsS -X POST http://127.0.0.1:5329/ \
-    -H 'Content-Type: application/json' \
-    -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
-         "params":{"name":"maludb.sessions.create",
-                   "arguments":{"account_name":"fieldtest",
-                                "alias_name":"tiny",
-                                "template_name":"r10-greet"}}}' \
-    | jq -r '.result.structuredContent.session_id'
-# → e.g. 1
-SID=$(... above ...)
+set -euo pipefail
 
-curl -fsS -X POST http://127.0.0.1:5329/ \
-    -H 'Content-Type: application/json' \
-    -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",
-         \"params\":{\"name\":\"maludb.prompts.render\",
-                     \"arguments\":{\"session_id\":$SID,
-                                    \"template_name\":\"r10-greet\",
-                                    \"variables\":{\"name\":\"world\"}}}}" \
-    | jq -r '.result.structuredContent.render_id'
-# → e.g. 1
-RID=$(... above ...)
+# Match the listener mode selected in §6.4/§6.5.
+TLS_ENABLED=$(sudo awk -F= '/^TLS=/{print tolower($2)}' /etc/maludb/maludb-mc2dbd.conf | tail -n1)
+if [ "$TLS_ENABLED" = "true" ]; then
+  MALUDB_URL=https://127.0.0.1:5329/
+  CURL_TLS=(-k)     # bootstrap cert is self-signed
+else
+  MALUDB_URL=http://127.0.0.1:5329/
+  CURL_TLS=()
+fi
 
-curl -fsS -X POST http://127.0.0.1:5329/ \
-    -H 'Content-Type: application/json' \
-    -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",
-         \"params\":{\"name\":\"maludb.models.submit\",
-                     \"arguments\":{\"render_id\":$RID,\"alias_name\":\"tiny\"}}}" \
-    | jq '.result.structuredContent'
-# → {"request_id": ..., "response_id": null, "provider_kind": "local_runtime"}
-REQ=...
+TOKEN=$(sudo sed -n 's/^BEARER_TOKEN=//p' /etc/maludb/maludb-mc2dbd.conf | tail -n1 | sed 's/^"//; s/"$//')
+if [ -n "${TOKEN:-}" ]; then
+  AUTH_ARGS=(-H "Authorization: Bearer $TOKEN")
+else
+  AUTH_ARGS=()
+fi
 
-# wait a few seconds for maludb_modeld to pick it up, then:
-curl -fsS -X POST http://127.0.0.1:5329/ \
+call_tool() {
+  local id="$1"
+  local name="$2"
+  local args_json="$3"
+
+  curl "${CURL_TLS[@]}" -fsS -X POST "$MALUDB_URL" \
+    "${AUTH_ARGS[@]}" \
     -H 'Content-Type: application/json' \
-    -d "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",
-         \"params\":{\"name\":\"maludb.responses.get\",
-                     \"arguments\":{\"request_id\":$REQ}}}" \
-    | jq '.result.structuredContent'
-# → {"pending": false, "response": {...output_text: "Hi world..."...}}
+    -d "$(jq -n \
+      --argjson id "$id" \
+      --arg name "$name" \
+      --argjson arguments "$args_json" \
+      '{jsonrpc:"2.0", id:$id, method:"tools/call",
+        params:{name:$name, arguments:$arguments}}')"
+}
+
+SID=$(call_tool 1 maludb.sessions.create \
+  '{"account_name":"fieldtest","alias_name":"tiny","template_name":"r10-greet"}' \
+  | jq -er '.result.structuredContent.session_id')
+echo "session_id=$SID"
+
+RID=$(call_tool 2 maludb.prompts.render \
+  "$(jq -n --argjson sid "$SID" \
+    '{session_id:$sid, template_name:"r10-greet", variables:{name:"world"}}')" \
+  | jq -er '.result.structuredContent.render_id')
+echo "render_id=$RID"
+
+SUBMIT=$(call_tool 3 maludb.models.submit \
+  "$(jq -n --argjson rid "$RID" '{render_id:$rid, alias_name:"tiny"}')")
+echo "$SUBMIT" | jq '.result.structuredContent'
+
+REQ=$(echo "$SUBMIT" | jq -er '.result.structuredContent.request_id')
+echo "request_id=$REQ"
+
+# Give maludb_modeld a polling interval or two to claim and complete it.
+sleep 10
+
+call_tool 4 maludb.responses.get \
+  "$(jq -n --argjson req "$REQ" '{request_id:$req}')" \
+  | jq '.result.structuredContent'
 ```
 
-Pass criterion: `pending: false` with `output_text` containing real
-model output. If `pending: true` after 30 seconds, check
-`sudo journalctl -u maludb-modeld -n 50` for adapter errors.
+Pass criterion: the final JSON has `"pending": false` and a `response`
+object with model output text.
+
+If the response stays pending, check:
+
+```bash
+systemctl status -l maludb-modeld --no-pager
+sudo journalctl -u maludb-modeld -n 80 --no-pager
+```
+
+If `curl` reports `Empty reply from server`, you are probably sending
+plain HTTP to a listener that was switched to native TLS in §6.5. The
+pasteable block above reads `TLS=true` from
+`/etc/maludb/maludb-mc2dbd.conf` and uses `https://...` plus `-k`
+automatically.
 
 ---
 
