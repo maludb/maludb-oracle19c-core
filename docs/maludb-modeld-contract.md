@@ -23,7 +23,7 @@ proven the contract is right.
 ## Tables
 
 `malu$model_request` and `malu$model_response` are the only durable
-state. Schemas in `maludb_core--0.1.0.sql`. Service writes go through
+state. Schemas in `sql/extension/maludb_core--0.1.0.sql`. Service writes go through
 the SQL APIs below, **not** by direct DML against the tables, so status
 transitions stay in one place.
 

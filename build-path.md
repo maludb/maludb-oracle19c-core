@@ -30,7 +30,7 @@ Read these before changing code or requirements:
 - `design-notes.md`: architectural design decisions and open questions.
 - `mc2db-white-paper.md`: MC2DB concept paper for database-native MCP-compatible listeners and stored-procedure tools.
 - `docs/design/svpor-schema.md`: Stage 3 SVPOR design-on-paper; do not install in Stage 1.
-- `Makefile`, `maludb_core.control`, `maludb_core--0.1.0.sql`, `src/maludb_core.c`, `sql/load.sql`, `expected/load.out`: current Stage 1 extension scaffold.
+- `Makefile`, `maludb_core.control`, `sql/extension/maludb_core--0.1.0.sql`, `src/maludb_core.c`, `sql/load.sql`, `expected/load.out`: current Stage 1 extension scaffold.
 
 ## 3. Verification Commands
 
@@ -88,7 +88,7 @@ We are in Stage 1 of MaluDB. Read AGENTS.md, requirements.md, design-notes.md, a
 Goal: make the maludb_core PGXS extension installable and testable on PostgreSQL 17 with pgvector.
 
 Required changes:
-- Update maludb_core--0.1.0.sql to create only Stage 1 catalog scaffolding and a vector demonstration table in the maludb_core schema.
+- Update `sql/extension/maludb_core--0.1.0.sql` to create only Stage 1 catalog scaffolding and a vector demonstration table in the maludb_core schema.
 - Add dependency checks or actionable failure behavior for pgvector.
 - Update sql/load.sql and expected/load.out to test extension load, catalog scaffolding reads, vector insert/query, and absence of Stage 2+ governed memory objects.
 - Keep C code minimal unless PostgreSQL backend behavior is required.
@@ -483,4 +483,4 @@ Expected output:
 
 ## 14. Current Next Step
 
-The immediate next engineering step is still Stage 1: turn the existing extension skeleton into a PostgreSQL + pgvector foundation with catalog scaffolding, vector demonstration table, stage-boundary tests, and install/bootstrap validation. Stage 2+ design can continue in documents, but it must not ship through `maludb_core--0.1.0.sql` until the Stage 1 gate is met.
+The immediate next engineering step is still Stage 1: turn the existing extension skeleton into a PostgreSQL + pgvector foundation with catalog scaffolding, vector demonstration table, stage-boundary tests, and install/bootstrap validation. Stage 2+ design can continue in documents, but it must not ship through `sql/extension/maludb_core--0.1.0.sql` until the Stage 1 gate is met.

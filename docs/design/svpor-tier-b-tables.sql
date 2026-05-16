@@ -1,7 +1,7 @@
 -- MaluDB Tier B — governed-object instance tables.
 --
 -- Reference DDL for the SVPOR design (Stage 3 per requirements.md §9).
--- DO NOT load this from the Stage 1 maludb_core--0.1.0.sql install script.
+-- DO NOT load this from the Stage 1 sql/extension/maludb_core--0.1.0.sql install script.
 --
 -- Conventions     : see CLAUDE.md → "Naming and access conventions".
 -- Full design     : docs/design/svpor-schema.md.

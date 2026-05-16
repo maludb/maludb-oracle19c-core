@@ -89,9 +89,6 @@ Day-2 operations are in [docs/admin-guide.md](docs/admin-guide.md).
 ## Documents
 
 - [`requirements.md`](requirements.md) — what the system must satisfy.
-- [`white-paper.md`](white-paper.md) — the conceptual reference (frozen).
-- [`version3-requirements.md`](version3-requirements.md) — Version 3 ticket-level scope.
-- [`version3-plan.md`](version3-plan.md) — Version 3 implementation plan.
 - [`docs/install.md`](docs/install.md) — operator-grade install playbook.
 - [`docs/getting-started.md`](docs/getting-started.md) — first-time walkthrough.
 - [`docs/admin-guide.md`](docs/admin-guide.md) — backups, audit queries, lifecycle.
@@ -117,7 +114,7 @@ The project ships in stages (`requirements.md` §9):
 - **Stage 6 (broker)** ✅ — External MCP broker reference (`services/mcp-broker` v0.1.0).
 - **Stage 6 (drivers)** ✅ — C / Python / Node.js / PHP SDKs (v0.1.0 each). C SDK v0.2.0 (pool / skill / node wrappers) is a V3-SDK-01 follow-up.
 - **Stage 7** ✅ — Hardening: benchmarks, security review, docs, deb packaging, **public alpha tagged**.
-- **Stages 8–15 (Version 3)** 🚧 — Platform-ergonomics track: identity/secrets, REST gateway + CLI + SDK parity, durable queue + cron, verbatim source archive v1, realtime + presence, vector/retrieval polish, metrics + log drains + backup/PITR + preview envs + replicas. See [`version3-requirements.md`](version3-requirements.md) and [`version3-plan.md`](version3-plan.md).
+- **Stages 8–15 (Version 3)** 🚧 — Platform-ergonomics track: identity/secrets, REST gateway + CLI + SDK parity, durable queue + cron, verbatim source archive v1, realtime + presence, vector/retrieval polish, metrics + log drains + backup/PITR + preview envs + replicas.
 
 ## Contributing
 
