@@ -481,22 +481,131 @@ Then run `sudo systemctl restart maludb-mc2dbd`.
 
 ### 6.5 Enabling native TLS
 
-The bootstrap generates a self-signed dev cert. To switch the listener
-to HTTPS:
+Native TLS means `maludb_mc2dbd` terminates HTTPS itself. The listener
+keeps the same bind address and port, but clients must switch from
+`http://127.0.0.1:5329` to `https://127.0.0.1:5329`. The bootstrap
+creates a self-signed development certificate at
+`/etc/maludb/tls/server.crt` and a matching private key at
+`/etc/maludb/tls/server.key`; those files are readable by the
+`maludb_mc2dbd` service user.
+
+Use this path for a single-host or field-test install. For a public
+deployment, either replace the self-signed certificate with one from
+your CA or keep the listener on localhost and put NGINX/HAProxy in
+front to terminate TLS.
+
+First confirm the generated certificate and key exist and are readable
+by the service user:
 
 ```bash
-sudoedit /etc/maludb/maludb-mc2dbd.conf
-# set:
-#   TLS=true
-#   TLS_CERT=/etc/maludb/tls/server.crt
-#   TLS_KEY=/etc/maludb/tls/server.key
-sudo systemctl restart maludb-mc2dbd
-
-curl -fsSk https://127.0.0.1:5329/healthz   # -k accepts self-signed
+sudo -u maludb_mc2dbd test -r /etc/maludb/tls/server.crt
+sudo -u maludb_mc2dbd test -r /etc/maludb/tls/server.key
+openssl x509 -in /etc/maludb/tls/server.crt -noout -subject -ext subjectAltName
 ```
 
-For production, replace the self-signed cert with one from your CA, or
-front the listener with NGINX terminating TLS.
+If either `test -r` command fails, regenerate the development
+certificate:
+
+```bash
+sudo ./scripts/maludb-tls-init \
+  --out-dir /etc/maludb/tls \
+  --owner maludb_mc2dbd \
+  --group maludb
+```
+
+Now write the TLS settings directly into the listener's systemd
+environment file:
+
+```bash
+sudo cp /etc/maludb/maludb-mc2dbd.conf /etc/maludb/maludb-mc2dbd.conf.bak
+sudo awk '
+  BEGIN {
+    seen_tls=0
+    seen_cert=0
+    seen_key=0
+  }
+  /^#?[[:space:]]*TLS=/ {
+    print "TLS=true"
+    seen_tls=1
+    next
+  }
+  /^#?[[:space:]]*TLS_CERT=/ {
+    print "TLS_CERT=/etc/maludb/tls/server.crt"
+    seen_cert=1
+    next
+  }
+  /^#?[[:space:]]*TLS_KEY=/ {
+    print "TLS_KEY=/etc/maludb/tls/server.key"
+    seen_key=1
+    next
+  }
+  { print }
+  END {
+    if (!seen_tls) print "TLS=true"
+    if (!seen_cert) print "TLS_CERT=/etc/maludb/tls/server.crt"
+    if (!seen_key) print "TLS_KEY=/etc/maludb/tls/server.key"
+  }
+' /etc/maludb/maludb-mc2dbd.conf.bak \
+  | sudo tee /etc/maludb/maludb-mc2dbd.conf >/dev/null
+sudo chown root:maludb /etc/maludb/maludb-mc2dbd.conf
+sudo chmod 0640 /etc/maludb/maludb-mc2dbd.conf
+
+sudo systemctl restart maludb-mc2dbd
+```
+
+Confirm the file contains the TLS settings and the listener restarted:
+
+```bash
+sudo awk -F= '
+  /^(TLS|TLS_CERT|TLS_KEY)=/ { print }
+' /etc/maludb/maludb-mc2dbd.conf
+systemctl status maludb-mc2dbd --no-pager
+```
+
+Pass criterion: the config printout includes
+`TLS=true`, `TLS_CERT=/etc/maludb/tls/server.crt`, and
+`TLS_KEY=/etc/maludb/tls/server.key`; `systemctl status` shows
+`Active: active (running)`.
+
+Plain HTTP should now fail because the listener expects a TLS
+handshake:
+
+```bash
+curl -i -sS http://127.0.0.1:5329/healthz | head
+```
+
+HTTPS should work. The `-k` flag is required for the bootstrap
+self-signed certificate because it is not trusted by the OS certificate
+store:
+
+```bash
+curl -fsSk https://127.0.0.1:5329/healthz
+```
+
+Expected: `ok`.
+
+If you enabled bearer-token authentication in §6.4, include the token
+on JSON-RPC calls over HTTPS. If you are in a new shell, set `TOKEN`
+to the same value you wrote into `/etc/maludb/maludb-mc2dbd.conf`
+before running this test:
+
+```bash
+curl -fsSk -X POST https://127.0.0.1:5329/ \
+    -H "Authorization: Bearer $TOKEN" \
+    -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | jq .
+```
+
+To edit manually instead, set these lines in
+`/etc/maludb/maludb-mc2dbd.conf`:
+
+```conf
+TLS=true
+TLS_CERT=/etc/maludb/tls/server.crt
+TLS_KEY=/etc/maludb/tls/server.key
+```
+
+Then run `sudo systemctl restart maludb-mc2dbd`.
 
 ---
 
