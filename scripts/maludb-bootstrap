@@ -186,13 +186,20 @@ section "Configuring pgaudit preload"
 PG_VER=17
 PG_CLUSTER=main
 
+pg_conf_show() {
+    local key="$1"
+    pg_conftool "$PG_VER" "$PG_CLUSTER" show "$key" 2>/dev/null \
+        | awk -F'= ' '{print $2}' \
+        | tr -d "'" \
+        || true
+}
+
 # Read current value (empty if unset). pg_conftool always writes
 # /etc/postgresql/$PG_VER/$PG_CLUSTER/postgresql.conf, so this path
 # is immune to the ALTER SYSTEM list-GUC quoting trap that converts
 # a single-string list ('pgaudit, pg_stat_statements') into a
 # double-quoted blob that PG then treats as one library name.
-cur_preload="$(pg_conftool "$PG_VER" "$PG_CLUSTER" show shared_preload_libraries 2>/dev/null \
-    | awk -F'= ' '{print $2}' | tr -d "'")"
+cur_preload="$(pg_conf_show shared_preload_libraries)"
 needs_restart=0
 
 for lib in pgaudit pg_stat_statements; do
@@ -213,8 +220,7 @@ for lib in pgaudit pg_stat_statements; do
 done
 
 # pgaudit.log target classes — safe defaults; operators can narrow later.
-cur_log="$(pg_conftool "$PG_VER" "$PG_CLUSTER" show pgaudit.log 2>/dev/null \
-    | awk -F'= ' '{print $2}' | tr -d "'")"
+cur_log="$(pg_conf_show pgaudit.log)"
 target_log='read, write, ddl, role, function'
 if [ "$cur_log" != "$target_log" ]; then
     need_root "pg_conftool pgaudit.log"
