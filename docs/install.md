@@ -754,8 +754,31 @@ sudo systemctl enable --now maludb-modeld
 systemctl status maludb-modeld --no-pager
 ```
 
-Expected: `Active: active (running)`. The daemon polls every 5
-seconds; if no pending requests exist it idles.
+Expected (truncated):
+
+```text
+● maludb-modeld.service - MaluDB Model Gateway Daemon (R1.0)
+     Loaded: loaded (/etc/systemd/system/maludb-modeld.service; enabled; ...)
+     Active: active (running) since ...
+   Main PID: 12345 (bash)
+      CGroup: /system.slice/maludb-modeld.service
+             ├─12345 bash /usr/local/sbin/maludb_modeld
+             └─12399 sleep 5
+
+... maludb_modeld ... info maludb_modeld starting (poll=5s, llama=/usr/local/bin/llama-cli)
+```
+
+Pass criterion: `Active: active (running)`. `Main PID: ... (bash)` is
+normal; `maludb_modeld` is a shell daemon. A child `sleep 5` process is
+also normal while the daemon is idle between database polls.
+
+If `systemctl status` says some lines were ellipsized, use `-l` or
+read the journal:
+
+```bash
+systemctl status -l maludb-modeld --no-pager
+sudo journalctl -u maludb-modeld -n 50 --no-pager
+```
 
 ### 7.5 End-to-end test through the listener
 
