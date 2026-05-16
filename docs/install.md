@@ -627,14 +627,51 @@ sudo apt-get install -y cmake
 Then build:
 
 ```bash
-make -C runtime         # CPU build (default — works without GPU)
-# or, on a CUDA host:
+# CPU build: default and recommended for CPU-only hosts.
+# This runs CMake with CMAKE_BUILD_TYPE=Release and GGML_CUDA=OFF.
+make -C runtime
+
+# CUDA build: optional. Use only when the NVIDIA driver and CUDA Toolkit
+# are installed and nvcc is on PATH.
+# This also uses CMAKE_BUILD_TYPE=Release.
 make -C runtime cuda
 ```
 
 The CPU build takes 2–5 minutes on commodity hardware. CUDA builds
 take longer because of the kernel compilation; expect 10+ minutes
 on a fresh checkout.
+
+Common configure output:
+
+```text
+-- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+-- CMAKE_SYSTEM_PROCESSOR: x86_64
+-- GGML_SYSTEM_ARCH: x86
+-- Including CPU backend
+-- x86 detected
+-- Adding CPU backend variant ggml-cpu: -march=native
+```
+
+Those lines are normal. `ccache` is optional; missing `ccache` only
+means rebuilds may be slower.
+
+If you run the optional CUDA build on a host without the CUDA Toolkit,
+CMake may stop with:
+
+```text
+-- Could not find nvcc, please set CUDAToolkit_ROOT.
+CMake Error at ggml/src/ggml-cuda/CMakeLists.txt:267 (message):
+  CUDA Toolkit not found
+```
+
+That error is OK for a CPU-only install. It means only the optional
+CUDA path failed; it does not mean the MaluDB install failed. Continue
+with the CPU build instead:
+
+```bash
+make -C runtime distclean
+make -C runtime BUILD_TYPE=Release
+```
 
 Expected: `third_party/llama.cpp/build/bin/llama-cli` exists and
 prints help when invoked.
