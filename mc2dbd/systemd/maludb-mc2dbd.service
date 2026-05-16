@@ -1,6 +1,6 @@
 [Unit]
 Description=MaluDB MC2DB Listener (R1.0)
-Documentation=https://github.com/anthropics/maludb-core/blob/main/docs/maludb-mc2dbd-contract.md
+Documentation=https://github.com/maludb/maludb-core/blob/main/docs/maludb-mc2dbd-contract.md
 After=postgresql.service network-online.target
 Wants=network-online.target
 Requires=postgresql.service

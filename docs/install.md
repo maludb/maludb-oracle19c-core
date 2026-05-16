@@ -156,7 +156,7 @@ Sample output (abbreviated):
 
 ==> Installing apt dependencies
     ✓ PGDG repo configured
-    ✓ Installed: postgresql-17 postgresql-server-dev-17 postgresql-17-pgvector ...
+    ✓ Installed: postgresql-17 postgresql-server-dev-17 postgresql-17-pgvector postgresql-17-pgaudit postgresql-17-partman ...
 
 ==> Building maludb_core (PGXS) and maludb_mc2dbd
     ✓ maludb_core built
@@ -202,6 +202,7 @@ exits 0. Re-running should produce mostly cyan `·` (skip) lines.
 |---|---|---|
 | `E: Unable to locate package postgresql-17` | PGDG repo step failed silently. | `cat /etc/apt/sources.list.d/pgdg.list` should contain `noble-pgdg main`. Re-run `sudo apt-get update` and look for HTTP errors. |
 | `make: *** No rule to make target 'install'.` | You ran bootstrap from a directory other than the repo root. | `cd ~/maludb-core && sudo ./scripts/maludb-bootstrap` |
+| Bootstrap stops immediately after `==> Configuring pgaudit preload` | Older bootstrap code aborted when `shared_preload_libraries` or `pgaudit.log` was unset on a fresh cluster. | Pull a revision that includes the pgaudit preload fix, then re-run `sudo ./scripts/maludb-bootstrap`. |
 | `psql: error: FATAL: Peer authentication failed` | The cluster's `pg_hba.conf` doesn't have a `local all all peer` line. | The default Ubuntu PG install does have this. If you've customized, add: `local all all peer` to `/etc/postgresql/17/main/pg_hba.conf`, then `sudo systemctl reload postgresql`. |
 | `useradd: user 'maludb_mc2dbd' already exists` followed by failure | A previous partial install left the user; the script should `skip`, but a different shell or group was set. | `sudo userdel maludb_mc2dbd && sudo userdel maludb_modeld && sudo groupdel maludb`, then re-run. |
 | `cd '/usr/lib/postgresql/17/lib/bitcode' && ... llvm-lto ...` exits non-zero | LLVM JIT build step failed. | Verify `dpkg -l llvm-19-runtime` shows installed. The `postgresql-server-dev-17` package pulls it; if missing, `sudo apt-get install -y llvm-19-runtime`. |
@@ -223,14 +224,16 @@ PASS  PostgreSQL reachable (PostgreSQL 17.x ...)
 PASS  maludb_core 0.71.0 installed
 PASS  pgvector demo table reachable
 WARN  pgvector demo table empty (ok if no rows inserted yet)
+PASS  pgaudit present in shared_preload_libraries
+PASS  pgaudit.log = 'read, write, ddl, role, function'
 WARN  no GPU detected (CPU-only install — dev OK; production benchmarks want a GPU)
 PASS  model runtime stub mode functional
-PASS  maludb.r10 tools registered (full V4 tool surface)
+PASS  14 maludb.r10 tools registered (13 R1.0 + 1 R1.1)
 PASS  stage boundary clean
 PASS  end-to-end stub pipeline (account → session → context → render → submit → response)
 WARN  listener not running at http://127.0.0.1:5329 (start with: sudo systemctl start maludb-mc2dbd)
 
-Validation OK: 7 pass / 3 warn / 0 fail (10 checks)
+Validation OK: 9 pass / 3 warn / 0 fail (12 checks)
 ```
 
 Pass criterion: **no FAIL lines.** WARN is acceptable for the
@@ -255,11 +258,14 @@ sudo -u postgres psql -d maludb -c "DROP SCHEMA IF EXISTS mc2db CASCADE; DROP SC
 sudo systemctl enable --now maludb-mc2dbd
 ```
 
-Expected:
+Expected on the first enable:
 
 ```
 Created symlink /etc/systemd/system/multi-user.target.wants/maludb-mc2dbd.service → /etc/systemd/system/maludb-mc2dbd.service.
 ```
+
+If the unit is already enabled, `systemctl enable --now` may print
+nothing and still succeed. Continue to the status check.
 
 ### 5.2 Confirm it's running
 
@@ -270,15 +276,15 @@ systemctl status maludb-mc2dbd --no-pager
 Expected (truncated):
 
 ```
-● maludb-mc2dbd.service - MaluDB MC2DB Listener
+● maludb-mc2dbd.service - MaluDB MC2DB Listener (R1.0)
      Loaded: loaded (/etc/systemd/system/maludb-mc2dbd.service; enabled; ...)
      Active: active (running) since ...
    Main PID: 12345 (maludb_mc2dbd)
-      Tasks: 9 (limit: ...)
-     Memory: 4.0M
-        CPU: 5ms
      CGroup: /system.slice/maludb-mc2dbd.service
              └─12345 /usr/local/sbin/maludb_mc2dbd --foreground --host 127.0.0.1 --port 5329 ...
+
+... maludb_mc2dbd ... info mc2dbd listening on 127.0.0.1:5329 (TLS=off)
+... maludb_mc2dbd ... info mc2dbd maludb_mc2dbd 0.1.0 ready
 ```
 
 Pass criterion: `Active: active (running)`.
@@ -322,7 +328,7 @@ curl -fsS -X POST http://127.0.0.1:5329/ \
     | jq '.result.tools | length'
 ```
 
-Expected: `13`
+Expected: `41`
 
 ### 5.4 Re-run the validator
 
@@ -333,17 +339,18 @@ Expected: `13`
 Now expect:
 
 ```
-... (the 7 PASS lines from §4.1) ...
+... (the pre-listener checks from §4.1) ...
 PASS  listener /healthz reachable at http://127.0.0.1:5329
 PASS  MCP initialize succeeds (serverInfo.name=maludb_mc2dbd)
-PASS  tools/list advertises 13 maludb.* tools
+PASS  tools/list advertises 41 maludb.* tools
 PASS  tools/call maludb.health → status=ok
 
-Validation OK: 11 pass / 2 warn / 0 fail (13 checks)
+Validation OK: 13 pass / 2 warn / 0 fail (15 checks)
 ```
 
-Pass criterion: 11 pass / 2 warn / 0 fail (or 11+ pass if you've also
-seeded `malu$vector_demo` rows or the host has a GPU).
+Pass criterion: **no FAIL lines** and the four listener checks above
+are PASS. A CPU-only host and an empty `malu$vector_demo` table remain
+acceptable WARNs.
 
 ### 5.5 Listener won't start
 
@@ -641,7 +648,7 @@ sudo make -C ~/maludb-core uninstall PG_CONFIG=/usr/lib/postgresql/17/bin/pg_con
 PG 17 itself stays installed; if you need to remove it too:
 
 ```bash
-sudo apt-get -y purge postgresql-17 postgresql-17-pgvector postgresql-server-dev-17
+sudo apt-get -y purge postgresql-17 postgresql-17-pgvector postgresql-17-pgaudit postgresql-17-partman postgresql-server-dev-17
 sudo apt-get -y autoremove
 ```
 

@@ -1,6 +1,6 @@
 [Unit]
 Description=MaluDB Model Gateway Daemon (R1.0)
-Documentation=https://github.com/anthropics/maludb-core/blob/main/docs/maludb-modeld-contract.md
+Documentation=https://github.com/maludb/maludb-core/blob/main/docs/maludb-modeld-contract.md
 After=postgresql.service network-online.target
 Wants=network-online.target
 Requires=postgresql.service

@@ -34,18 +34,18 @@ MaluDB is a memory DBMS built on PostgreSQL 17. It is delivered as:
 
 | | |
 |---|---|
-| Extension `default_version` | **0.71.0** (71 migrations — no new migration at rc.1; deliverables are the V4 acceptance suite: `scripts/maludb-fieldtest-v4` (28-case live-DB walkthrough of every V4 surface), `bench/v4/run-bench` (deterministic-overlap descent baselines on fixture markdown + chat corpora), and `docs/v4/acceptance-matrix.md` mapping plan §12 criteria to test artefacts) |
-| Last release tag | **`v4.0.0-rc.1`** at extension `0.71.0` (V4 acceptance suite + bench fixtures published — gating on a fresh-VM field test before v4.0.0 GA) |
+| Extension `default_version` | **0.71.0** (V4 GA; acceptance artefacts are `scripts/maludb-fieldtest-v4` (28-case live-DB walkthrough of every V4 surface), `bench/v4/run-bench` (deterministic-overlap descent baselines on fixture markdown + chat corpora), and `docs/v4/acceptance-matrix.md` mapping plan §12 criteria to test artefacts) |
+| Last release tag | **`v4.0.0`** at extension `0.71.0` (GA, 2026-05-15) |
 | Supported PostgreSQL majors | 16, 17, 18 (PG 17 is the blocking CI target) |
 | Test suite | 74/74 `pg_regress` on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
 | Shipped services | `maludb_modeld`, `maludb_mc2dbd`, `mcp-broker`, `maludb-restd`, `maludb-realtimed`, `maludb-pageindexd` |
 | Shipped SDKs | C (`libmaludb` v0.2.0 — pool/skill/node wrappers), Python, Node.js, PHP |
 | Shipped CLI | `maludb` v0.1.0 (V3-CLI-01) |
-| Roadmap status | `requirements.md` §9 Stages 1–15 shipped; Stage 16+ (Version 4 PageIndex / ChatIndex) underway — see [`version4-pageindex-plan.md`](../version4-pageindex-plan.md) |
+| Roadmap status | `requirements.md` §9 Stages 1–16+ shipped through V4 GA — see [`version4-pageindex-plan.md`](../version4-pageindex-plan.md) |
 
 For day-to-day operations the version that matters is the **extension migration
 chain version** (`maludb_core.control`'s `default_version`), the **release tag**
-(`v2.0.0-alpha.4`), and the **supported PG majors**. The three MUST agree across
+(`v4.0.0`), and the **supported PG majors**. The three MUST agree across
 `maludb_core.control`, [`README.md`](../README.md), [`CHANGELOG.md`](../CHANGELOG.md),
 and this manual — `tools/check-doc-version-consistency.sh` enforces this in CI.
 
@@ -1022,8 +1022,8 @@ The listener can require:
 Authorization: Bearer <token>
 ```
 
-The binary accepts `--bearer-token` or environment variable
-`MALUDB_MC2DBD_TOKEN`.
+The binary accepts `--bearer-token`, `BEARER_TOKEN`, or the legacy
+`MALUDB_MC2DBD_TOKEN` environment variable.
 
 ## 16. Monitoring
 

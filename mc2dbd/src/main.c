@@ -8,11 +8,21 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <signal.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
 
 static volatile sig_atomic_t g_running = 1;
 static void on_signal(int sig) { (void)sig; g_running = 0; }
+
+static bool env_truthy(const char *s)
+{
+    if (!s || !*s) return false;
+    return strcmp(s, "1") == 0 ||
+           strcasecmp(s, "true") == 0 ||
+           strcasecmp(s, "yes") == 0 ||
+           strcasecmp(s, "on") == 0;
+}
 
 void mc2dbd_log(const char *level, const char *fmt, ...)
 {
@@ -40,7 +50,7 @@ static void usage(FILE *f)
         "  --tls-cert PATH      TLS certificate file\n"
         "  --tls-key  PATH      TLS private key file\n"
         "  --bearer-token TOK   require Authorization: Bearer <TOK>\n"
-        "                       (or set env MALUDB_MC2DBD_TOKEN)\n"
+        "                       (or set env BEARER_TOKEN / MALUDB_MC2DBD_TOKEN)\n"
         "  --foreground         do not daemonize (default for systemd)\n"
         "  --version            print version and exit\n"
         "  --help               this help\n",
@@ -95,8 +105,20 @@ int main(int argc, char **argv)
 
     /* Env overrides where flags weren't provided. */
     if (!cfg.bearer_token) {
-        const char *e = getenv("MALUDB_MC2DBD_TOKEN");
+        const char *e = getenv("BEARER_TOKEN");
+        if (!e || !*e) e = getenv("MALUDB_MC2DBD_TOKEN");
         if (e && *e) cfg.bearer_token = strdup(e);
+    }
+    if (!cfg.tls_enabled && env_truthy(getenv("TLS"))) {
+        cfg.tls_enabled = true;
+    }
+    if (!cfg.tls_cert_path) {
+        const char *e = getenv("TLS_CERT");
+        if (e && *e) cfg.tls_cert_path = strdup(e);
+    }
+    if (!cfg.tls_key_path) {
+        const char *e = getenv("TLS_KEY");
+        if (e && *e) cfg.tls_key_path = strdup(e);
     }
 
     if (cfg.bind_port <= 0 || cfg.bind_port > 65535) {

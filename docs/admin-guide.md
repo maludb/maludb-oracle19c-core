@@ -141,7 +141,7 @@ upgrade an existing database:
 ```bash
 # After `sudo apt upgrade maludb` lands the new files:
 sudo -u postgres psql -d mydb -c \
-    "ALTER EXTENSION maludb_core UPDATE TO '0.41.0'"
+    "ALTER EXTENSION maludb_core UPDATE TO '0.71.0'"
 ```
 
 The migration chain handles incremental upgrades. Always run on

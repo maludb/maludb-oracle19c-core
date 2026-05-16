@@ -11,7 +11,7 @@ Four binary packages ship from a single `dpkg-buildpackage` invocation:
 
 Each `postgresql-N-maludb-core` package carries `maludb_core.so`,
 `maludb_core.control`, and every `maludb_core--X.Y--X.Z.sql`
-migration script (all 41 in v0.41.0) under
+migration script (72 SQL extension scripts in v0.71.0) under
 `/usr/lib/postgresql/N/` and `/usr/share/postgresql/N/extension/`.
 Operators install exactly the per-version package matching their
 PG major.
@@ -36,12 +36,12 @@ Flags:
 Output lands in the parent directory:
 
 ```
-../postgresql-16-maludb-core_0.41.0-1_amd64.deb
-../postgresql-17-maludb-core_0.41.0-1_amd64.deb
-../postgresql-18-maludb-core_0.41.0-1_amd64.deb
-../maludb-mc2dbd_0.41.0-1_amd64.deb
-../maludb_0.41.0-1_amd64.changes
-../maludb_0.41.0-1_amd64.buildinfo
+../postgresql-16-maludb-core_0.71.0-1_amd64.deb
+../postgresql-17-maludb-core_0.71.0-1_amd64.deb
+../postgresql-18-maludb-core_0.71.0-1_amd64.deb
+../maludb-mc2dbd_0.71.0-1_amd64.deb
+../maludb_0.71.0-1_amd64.changes
+../maludb_0.71.0-1_amd64.buildinfo
 ```
 
 The `-dbgsym` debug-symbol packages (.ddeb) are produced too if
@@ -107,7 +107,7 @@ running `dpkg-buildpackage`. Build-deps include
 sudo -u postgres createdb acc
 sudo -u postgres psql -d acc -c "CREATE EXTENSION maludb_core CASCADE"
 sudo -u postgres psql -d acc -c "SELECT maludb_core.maludb_core_version()"
-# expected: 0.41.0
+# expected: 0.71.0
 ```
 
 Then run a full regression in the source tree against the installed
@@ -115,7 +115,7 @@ extension to confirm nothing slipped:
 
 ```bash
 make installcheck PG_CONFIG=/usr/lib/postgresql/17/bin/pg_config
-# expected: All 50 tests passed.
+# expected: All 74 tests passed.
 ```
 
 ## Known issues

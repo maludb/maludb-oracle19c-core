@@ -279,27 +279,20 @@ layer. At minimum:
 
 ## 6. Upgrades
 
-R1.0 ships as a single SQL file (`maludb_core--0.1.0.sql`). There is
-no in-place upgrade path yet — R1.1 will add upgrade SQL files
-(`maludb_core--0.1.0--0.1.1.sql`).
-
-For now, minor changes to the extension require:
+MaluDB ships versioned PostgreSQL extension migration scripts. To move
+an existing database to the installed package's default version:
 
 ```bash
 cd ~/maludb-core
 git pull
 sudo make install PG_CONFIG=/usr/lib/postgresql/17/bin/pg_config
 
-# Then in the database — DROP EXTENSION discards data, so back up first:
 pg_dump maludb > maludb-pre-upgrade.dump
-sudo -u postgres psql -d maludb -c "DROP EXTENSION maludb_core CASCADE; CREATE EXTENSION maludb_core CASCADE;"
-# Restore relevant tables from the dump
+sudo -u postgres psql -d maludb -c "ALTER EXTENSION maludb_core UPDATE;"
 ```
 
-**Don't upgrade in place on a production install with real data
-until R1.1's versioned migration scripts ship.** For pre-R1.1
-deployments, treat the install as immutable and re-deploy from a
-backup if you need a newer version.
+Always test extension upgrades against a restored copy before applying
+them to production data.
 
 ---
 
