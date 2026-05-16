@@ -224,14 +224,16 @@ PASS  PostgreSQL reachable (PostgreSQL 17.x ...)
 PASS  maludb_core 0.71.0 installed
 PASS  pgvector demo table reachable
 WARN  pgvector demo table empty (ok if no rows inserted yet)
+PASS  pgaudit present in shared_preload_libraries
+PASS  pgaudit.log = 'read, write, ddl, role, function'
 WARN  no GPU detected (CPU-only install — dev OK; production benchmarks want a GPU)
 PASS  model runtime stub mode functional
-PASS  maludb.r10 tools registered (full V4 tool surface)
+PASS  14 maludb.r10 tools registered (13 R1.0 + 1 R1.1)
 PASS  stage boundary clean
 PASS  end-to-end stub pipeline (account → session → context → render → submit → response)
 WARN  listener not running at http://127.0.0.1:5329 (start with: sudo systemctl start maludb-mc2dbd)
 
-Validation OK: 7 pass / 3 warn / 0 fail (10 checks)
+Validation OK: 9 pass / 3 warn / 0 fail (12 checks)
 ```
 
 Pass criterion: **no FAIL lines.** WARN is acceptable for the
@@ -256,11 +258,14 @@ sudo -u postgres psql -d maludb -c "DROP SCHEMA IF EXISTS mc2db CASCADE; DROP SC
 sudo systemctl enable --now maludb-mc2dbd
 ```
 
-Expected:
+Expected on the first enable:
 
 ```
 Created symlink /etc/systemd/system/multi-user.target.wants/maludb-mc2dbd.service → /etc/systemd/system/maludb-mc2dbd.service.
 ```
+
+If the unit is already enabled, `systemctl enable --now` may print
+nothing and still succeed. Continue to the status check.
 
 ### 5.2 Confirm it's running
 
@@ -271,15 +276,15 @@ systemctl status maludb-mc2dbd --no-pager
 Expected (truncated):
 
 ```
-● maludb-mc2dbd.service - MaluDB MC2DB Listener
+● maludb-mc2dbd.service - MaluDB MC2DB Listener (R1.0)
      Loaded: loaded (/etc/systemd/system/maludb-mc2dbd.service; enabled; ...)
      Active: active (running) since ...
    Main PID: 12345 (maludb_mc2dbd)
-      Tasks: 9 (limit: ...)
-     Memory: 4.0M
-        CPU: 5ms
      CGroup: /system.slice/maludb-mc2dbd.service
              └─12345 /usr/local/sbin/maludb_mc2dbd --foreground --host 127.0.0.1 --port 5329 ...
+
+... maludb_mc2dbd ... info mc2dbd listening on 127.0.0.1:5329 (TLS=off)
+... maludb_mc2dbd ... info mc2dbd maludb_mc2dbd 0.1.0 ready
 ```
 
 Pass criterion: `Active: active (running)`.
@@ -323,7 +328,7 @@ curl -fsS -X POST http://127.0.0.1:5329/ \
     | jq '.result.tools | length'
 ```
 
-Expected: `13`
+Expected: `41`
 
 ### 5.4 Re-run the validator
 
@@ -334,17 +339,18 @@ Expected: `13`
 Now expect:
 
 ```
-... (the 7 PASS lines from §4.1) ...
+... (the pre-listener checks from §4.1) ...
 PASS  listener /healthz reachable at http://127.0.0.1:5329
 PASS  MCP initialize succeeds (serverInfo.name=maludb_mc2dbd)
-PASS  tools/list advertises 13 maludb.* tools
+PASS  tools/list advertises 41 maludb.* tools
 PASS  tools/call maludb.health → status=ok
 
-Validation OK: 11 pass / 2 warn / 0 fail (13 checks)
+Validation OK: 13 pass / 2 warn / 0 fail (15 checks)
 ```
 
-Pass criterion: 11 pass / 2 warn / 0 fail (or 11+ pass if you've also
-seeded `malu$vector_demo` rows or the host has a GPU).
+Pass criterion: **no FAIL lines** and the four listener checks above
+are PASS. A CPU-only host and an empty `malu$vector_demo` table remain
+acceptable WARNs.
 
 ### 5.5 Listener won't start
 
