@@ -1,3 +1,12 @@
+maludb (0.71.0-1) noble; urgency=medium
+
+  * v4.0.0 GA package metadata. Extension default_version 0.71.0;
+    74/74 pg_regress on PostgreSQL 17.
+  * Ship V4 PageIndex / ChatIndex SQL, MC2DB, REST, CLI, and SDK
+    surfaces with the 0.71.0 extension script set.
+
+ -- Edward Honour <ed@maludb.org>  Fri, 15 May 2026 00:00:00 +0000
+
 maludb (0.41.0-1) noble; urgency=medium
 
   * v2.0.0-alpha.1 point release. Extension 0.41.0; 51/51 pg_regress.

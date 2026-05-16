@@ -156,7 +156,7 @@ Sample output (abbreviated):
 
 ==> Installing apt dependencies
     ✓ PGDG repo configured
-    ✓ Installed: postgresql-17 postgresql-server-dev-17 postgresql-17-pgvector ...
+    ✓ Installed: postgresql-17 postgresql-server-dev-17 postgresql-17-pgvector postgresql-17-pgaudit postgresql-17-partman ...
 
 ==> Building maludb_core (PGXS) and maludb_mc2dbd
     ✓ maludb_core built
@@ -641,7 +641,7 @@ sudo make -C ~/maludb-core uninstall PG_CONFIG=/usr/lib/postgresql/17/bin/pg_con
 PG 17 itself stays installed; if you need to remove it too:
 
 ```bash
-sudo apt-get -y purge postgresql-17 postgresql-17-pgvector postgresql-server-dev-17
+sudo apt-get -y purge postgresql-17 postgresql-17-pgvector postgresql-17-pgaudit postgresql-17-partman postgresql-server-dev-17
 sudo apt-get -y autoremove
 ```
 

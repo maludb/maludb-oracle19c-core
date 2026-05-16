@@ -5,6 +5,23 @@ All notable changes to MaluDB land here. The format follows
 versions correspond to the extension migration chain
 (`maludb_core--X.Y--X.Z.sql`) plus a release tag.
 
+## v4.0.0 — 2026-05-15
+
+Version 4 GA. No new migration; default_version stays at 0.71.0.
+This tag promotes the rc.1 V4 surface after the fresh-VM acceptance
+gate and keeps the release artefacts aligned for public install
+testing.
+
+The GA surface includes:
+
+* PageIndex and ChatIndex as governed memory surfaces over the
+  Verbatim Source Archive.
+* SQL, MC2DB, REST, CLI, and C / Python / Node.js / PHP SDK access
+  to the V4 tree build, append/list, ask, and supersession flows.
+* `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and
+  `docs/v4/acceptance-matrix.md` as the acceptance artefacts for
+  the V4 plan.
+
 ## v4.0.0-rc.1 — 2026-05-14
 
 V4 release candidate. No new migration; default_version stays at

@@ -14,9 +14,9 @@ Build-Depends: debhelper-compat (= 13),
                libcurl4-openssl-dev,
                pkg-config
 Standards-Version: 4.6.2
-Homepage: https://github.com/edward-honour/maludb-core
-Vcs-Git: https://github.com/edward-honour/maludb-core.git
-Vcs-Browser: https://github.com/edward-honour/maludb-core
+Homepage: https://github.com/maludb/maludb-core
+Vcs-Git: https://github.com/maludb/maludb-core.git
+Vcs-Browser: https://github.com/maludb/maludb-core
 Rules-Requires-Root: no
 
 Package: postgresql-16-maludb-core

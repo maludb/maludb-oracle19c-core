@@ -57,6 +57,7 @@ maludb-bootstrap will, on a clean Ubuntu 24.04 host:
   2.  Configure the PGDG apt repo (if not already)
   3.  apt install:
         postgresql-17, postgresql-server-dev-17, postgresql-17-pgvector,
+        postgresql-17-pgaudit, postgresql-17-partman,
         build-essential, pkg-config, cmake,
         libpq-dev, libmicrohttpd-dev, libjansson-dev, libgnutls28-dev,
         libcurl4-openssl-dev, openssl, jq, curl
@@ -152,7 +153,7 @@ apt_install() {
 
 apt_install \
     postgresql-17 postgresql-server-dev-17 \
-    postgresql-17-pgvector \
+    postgresql-17-pgvector postgresql-17-pgaudit postgresql-17-partman \
     build-essential pkg-config cmake \
     libpq-dev libmicrohttpd-dev libjansson-dev libgnutls28-dev \
     libcurl4-openssl-dev openssl jq curl
