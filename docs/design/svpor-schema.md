@@ -1,6 +1,6 @@
 # SVPOR schema design
 
-**Stage:** 3 (per `requirements.md` §9). This document is design-on-paper. **Do not** install any of this DDL into the Stage 1 `maludb_core--0.1.0.sql`. Stage 3 will translate this into versioned extension upgrade scripts.
+**Stage:** 3 (per `requirements.md` §9). This document is design-on-paper. **Do not** install any of this DDL into the Stage 1 `sql/extension/maludb_core--0.1.0.sql`. Stage 3 will translate this into versioned extension upgrade scripts.
 
 **Sources:** `white-paper.md` §5 (SVPOR), `requirements.md` §3.1 (object model), §3.2 (SVPOR), §3.3 (MAUT), §3.4 (bitemporal), §3.5 (derivation ledger), §4.5 (authorization-aware retrieval), §5 (security), §9 (phased plan).
 

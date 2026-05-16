@@ -1,7 +1,7 @@
 -- MaluDB system catalog (Tier A) — CREATE TABLE statements.
 --
 -- Reference DDL for the SVPOR design (Stage 3 per requirements.md §9).
--- DO NOT load this from the Stage 1 maludb_core--0.1.0.sql install script.
+-- DO NOT load this from the Stage 1 sql/extension/maludb_core--0.1.0.sql install script.
 -- Stage 3 will translate this into a versioned maludb_core--X.Y--X.Z.sql
 -- upgrade script.
 --

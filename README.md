@@ -114,6 +114,8 @@ The project ships in stages (`requirements.md` §9):
 - **Stage 6 (in-DB)** ✅ — Local node sync, model registry migration, advanced MC2DB tools.
 - **Stage 6 (broker)** ✅ — External MCP broker reference (`services/mcp-broker` v0.1.0).
 - **Stage 6 (drivers)** ✅ — C / Python / Node.js / PHP SDKs (v0.1.0 each). C SDK v0.2.0 (pool / skill / node wrappers) is a V3-SDK-01 follow-up.
+- **Stage 7** ✅ — Hardening: benchmarks, security review, docs, deb packaging, **public alpha tagged**.
+- **Stages 8–15 (Version 3)** 🚧 — Platform-ergonomics track: identity/secrets, REST gateway + CLI + SDK parity, durable queue + cron, verbatim source archive v1, realtime + presence, vector/retrieval polish, metrics + log drains + backup/PITR + preview envs + replicas.
 - **Stage 7** ✅ — Hardening: benchmarks, security review, docs, deb packaging, public alpha tagged.
 - **Stages 8–15 (Version 3)** ✅ — Platform-ergonomics track: identity/secrets, REST gateway + CLI + SDK parity, durable queue + cron, verbatim source archive v1, realtime + presence, vector/retrieval polish, metrics + log drains + backup/PITR + preview envs + replicas. Shipped as `v3.0.0` and `v3.1.0`.
 - **Stages 16+ (Version 4)** ✅ — PageIndex / ChatIndex as governed memory surfaces over the Verbatim Source Archive. Reachable through every external surface (SQL / MC2DB / REST / CLI / 4-language SDK). Shipped as `v4.0.0`. See [`version4-pageindex-plan.md`](version4-pageindex-plan.md).
