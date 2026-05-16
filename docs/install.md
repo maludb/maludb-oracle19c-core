@@ -783,51 +783,82 @@ sudo journalctl -u maludb-modeld -n 50 --no-pager
 ### 7.5 End-to-end test through the listener
 
 ```bash
-# Open a session, append context, render, submit, read response
-curl -fsS -X POST http://127.0.0.1:5329/ \
-    -H 'Content-Type: application/json' \
-    -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
-         "params":{"name":"maludb.sessions.create",
-                   "arguments":{"account_name":"fieldtest",
-                                "alias_name":"tiny",
-                                "template_name":"r10-greet"}}}' \
-    | jq -r '.result.structuredContent.session_id'
-# → e.g. 1
-SID=$(... above ...)
+set -euo pipefail
 
-curl -fsS -X POST http://127.0.0.1:5329/ \
-    -H 'Content-Type: application/json' \
-    -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",
-         \"params\":{\"name\":\"maludb.prompts.render\",
-                     \"arguments\":{\"session_id\":$SID,
-                                    \"template_name\":\"r10-greet\",
-                                    \"variables\":{\"name\":\"world\"}}}}" \
-    | jq -r '.result.structuredContent.render_id'
-# → e.g. 1
-RID=$(... above ...)
+# Match the listener mode selected in §6.4/§6.5.
+TLS_ENABLED=$(sudo awk -F= '/^TLS=/{print tolower($2)}' /etc/maludb/maludb-mc2dbd.conf | tail -n1)
+if [ "$TLS_ENABLED" = "true" ]; then
+  MALUDB_URL=https://127.0.0.1:5329/
+  CURL_TLS=(-k)     # bootstrap cert is self-signed
+else
+  MALUDB_URL=http://127.0.0.1:5329/
+  CURL_TLS=()
+fi
 
-curl -fsS -X POST http://127.0.0.1:5329/ \
-    -H 'Content-Type: application/json' \
-    -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",
-         \"params\":{\"name\":\"maludb.models.submit\",
-                     \"arguments\":{\"render_id\":$RID,\"alias_name\":\"tiny\"}}}" \
-    | jq '.result.structuredContent'
-# → {"request_id": ..., "response_id": null, "provider_kind": "local_runtime"}
-REQ=...
+TOKEN=$(sudo sed -n 's/^BEARER_TOKEN=//p' /etc/maludb/maludb-mc2dbd.conf | tail -n1 | sed 's/^"//; s/"$//')
+if [ -n "${TOKEN:-}" ]; then
+  AUTH_ARGS=(-H "Authorization: Bearer $TOKEN")
+else
+  AUTH_ARGS=()
+fi
 
-# wait a few seconds for maludb_modeld to pick it up, then:
-curl -fsS -X POST http://127.0.0.1:5329/ \
+call_tool() {
+  local id="$1"
+  local name="$2"
+  local args_json="$3"
+
+  curl "${CURL_TLS[@]}" -fsS -X POST "$MALUDB_URL" \
+    "${AUTH_ARGS[@]}" \
     -H 'Content-Type: application/json' \
-    -d "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",
-         \"params\":{\"name\":\"maludb.responses.get\",
-                     \"arguments\":{\"request_id\":$REQ}}}" \
-    | jq '.result.structuredContent'
-# → {"pending": false, "response": {...output_text: "Hi world..."...}}
+    -d "$(jq -n \
+      --argjson id "$id" \
+      --arg name "$name" \
+      --argjson arguments "$args_json" \
+      '{jsonrpc:"2.0", id:$id, method:"tools/call",
+        params:{name:$name, arguments:$arguments}}')"
+}
+
+SID=$(call_tool 1 maludb.sessions.create \
+  '{"account_name":"fieldtest","alias_name":"tiny","template_name":"r10-greet"}' \
+  | jq -er '.result.structuredContent.session_id')
+echo "session_id=$SID"
+
+RID=$(call_tool 2 maludb.prompts.render \
+  "$(jq -n --argjson sid "$SID" \
+    '{session_id:$sid, template_name:"r10-greet", variables:{name:"world"}}')" \
+  | jq -er '.result.structuredContent.render_id')
+echo "render_id=$RID"
+
+SUBMIT=$(call_tool 3 maludb.models.submit \
+  "$(jq -n --argjson rid "$RID" '{render_id:$rid, alias_name:"tiny"}')")
+echo "$SUBMIT" | jq '.result.structuredContent'
+
+REQ=$(echo "$SUBMIT" | jq -er '.result.structuredContent.request_id')
+echo "request_id=$REQ"
+
+# Give maludb_modeld a polling interval or two to claim and complete it.
+sleep 10
+
+call_tool 4 maludb.responses.get \
+  "$(jq -n --argjson req "$REQ" '{request_id:$req}')" \
+  | jq '.result.structuredContent'
 ```
 
-Pass criterion: `pending: false` with `output_text` containing real
-model output. If `pending: true` after 30 seconds, check
-`sudo journalctl -u maludb-modeld -n 50` for adapter errors.
+Pass criterion: the final JSON has `"pending": false` and a `response`
+object with model output text.
+
+If the response stays pending, check:
+
+```bash
+systemctl status -l maludb-modeld --no-pager
+sudo journalctl -u maludb-modeld -n 80 --no-pager
+```
+
+If `curl` reports `Empty reply from server`, you are probably sending
+plain HTTP to a listener that was switched to native TLS in §6.5. The
+pasteable block above reads `TLS=true` from
+`/etc/maludb/maludb-mc2dbd.conf` and uses `https://...` plus `-k`
+automatically.
 
 ---
 
