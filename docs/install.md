@@ -1,21 +1,17 @@
-# MaluDB Release 1.0 — Detailed Install Guide
+# MaluDB v4.0.0 — Detailed Install Guide
 
-This is the operator-grade install playbook for MaluDB R1.0 on a clean
-Ubuntu 24.04 LTS server. Every step has the exact command, the
+This is the operator-grade install playbook for MaluDB v4.0.0 on a
+clean Ubuntu 24.04 LTS server. Every step has the exact command, the
 expected output, the pass criterion, and a troubleshooting note for
 the most likely failure mode. If you're following this end-to-end as
-the R1.0 field test, also read [`field-test.md`](field-test.md) for
-the §13 acceptance procedure that wraps this guide.
+the field test, also read [`field-test.md`](field-test.md) for the
+acceptance procedure that wraps this guide.
 
 > **Field-test note.** The bootstrap script in this guide has been
 > exercised step by step on the build host. The very-first install on
 > a *clean* Ubuntu 24.04 server is the field-test step. If anything
 > deviates from the expected output below, **stop, capture the diff,
 > and report it** rather than papering over.
-
-MaluDB v4.0.0 builds against llama.cpp b9165. After cloning, run git submodule update --init 
-  --recursive."
-
 
 ---
 
@@ -102,6 +98,9 @@ cd ~/maludb-core
 
 ### 2.2 Initialize submodules
 
+MaluDB v4.0.0 builds against `llama.cpp` tag `b9165`, pinned in
+`.gitmodules`. Initialise the submodule:
+
 ```bash
 git submodule update --init --recursive
 ```
@@ -111,7 +110,7 @@ Expected:
 ```
 Submodule 'third_party/llama.cpp' (https://github.com/ggml-org/llama.cpp.git) registered
 Cloning into '/home/$USER/maludb-core/third_party/llama.cpp'...
-Submodule path 'third_party/llama.cpp': checked out '994118a18...'
+Submodule path 'third_party/llama.cpp': checked out '<pinned commit>'
 ```
 
 Pass criterion: `third_party/llama.cpp/CMakeLists.txt` exists.
@@ -221,13 +220,13 @@ Expected (the listener isn't started yet, so its checks WARN):
 
 ```
 PASS  PostgreSQL reachable (PostgreSQL 17.x ...)
-PASS  maludb_core 0.4.0 installed
+PASS  maludb_core 0.71.0 installed
 PASS  pgvector demo table reachable
-WARN  pgvector demo table empty (R1.0-1 seeds none; ok if no rows inserted)
-WARN  no GPU detected (CPU-only install — R1.0 dev OK, field-test needs GPU)
+WARN  pgvector demo table empty (ok if no rows inserted yet)
+WARN  no GPU detected (CPU-only install — dev OK; production benchmarks want a GPU)
 PASS  model runtime stub mode functional
-PASS  14 maludb.r10 tools registered (13 R1.0 + 1 R1.1)
-PASS  stage boundary clean (no Stage 2+ memory objects installed)
+PASS  maludb.r10 tools registered (full V4 tool surface)
+PASS  stage boundary clean
 PASS  end-to-end stub pipeline (account → session → context → render → submit → response)
 WARN  listener not running at http://127.0.0.1:5329 (start with: sudo systemctl start maludb-mc2dbd)
 
@@ -271,7 +270,7 @@ systemctl status maludb-mc2dbd --no-pager
 Expected (truncated):
 
 ```
-● maludb-mc2dbd.service - MaluDB MC2DB Listener (R1.0)
+● maludb-mc2dbd.service - MaluDB MC2DB Listener
      Loaded: loaded (/etc/systemd/system/maludb-mc2dbd.service; enabled; ...)
      Active: active (running) since ...
    Main PID: 12345 (maludb_mc2dbd)
@@ -446,8 +445,8 @@ front the listener with NGINX terminating TLS.
 
 ## 7. Register a local model
 
-R1.0's reference local provider is llama.cpp. Bootstrap does not build
-it (operator-controlled).
+MaluDB's reference local provider is llama.cpp. Bootstrap does not
+build it (operator-controlled).
 
 ### 7.1 Build llama.cpp
 
@@ -620,7 +619,7 @@ model output. If `pending: true` after 30 seconds, check
 
 ## 9. Uninstall
 
-There is no automated uninstall in R1.0. Manual:
+There is no automated uninstall. Manual:
 
 ```bash
 sudo systemctl disable --now maludb-mc2dbd maludb-modeld 2>/dev/null
@@ -651,12 +650,13 @@ sudo apt-get -y autoremove
 ## What this guide deliberately does NOT cover
 
 - Backup and restore — operator's existing infra layer.
-- High-availability / replication / failover — not in R1.0 scope.
+- High-availability / replication / failover — out of scope for the
+  single-host install path; see `docs/v3/` for replication notes.
 - PG performance tuning (`shared_buffers`, `work_mem`, etc.) — workload-specific.
-- `cloud_api` provider adapters — catalog-modeled, dispatch deferred to R1.1-1.
-- Multi-tenant per-account authorization — deferred to R1.1-7.
-- `external_exec` and `mcp_proxy` MC2DB tool dispatch — catalog-modeled,
-  dispatch deferred to R1.1-1 / R1.1-2.
+- Cloud provider adapter configuration beyond the local llama path —
+  see `docs/runtime.md`.
+- Multi-tenant per-account authorization tuning — see the SVPOR
+  registries and `malu$object_grant` patterns in `docs/admin-guide.md`.
 
 For the field-test sign-off procedure that wraps this guide, see
 [`field-test.md`](field-test.md).
