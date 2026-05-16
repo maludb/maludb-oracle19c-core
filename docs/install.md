@@ -415,19 +415,69 @@ sudo systemctl restart maludb-mc2dbd     # or maludb-modeld
 
 ### 6.4 Enabling bearer-token authentication
 
+Generate a token and write it directly into the listener's systemd
+environment file:
+
 ```bash
 TOKEN=$(openssl rand -base64 48)
-sudoedit /etc/maludb/maludb-mc2dbd.conf
-# uncomment / set:
-#   BEARER_TOKEN="<paste $TOKEN>"
-sudo systemctl restart maludb-mc2dbd
 
-# now clients must authenticate:
+sudo cp /etc/maludb/maludb-mc2dbd.conf /etc/maludb/maludb-mc2dbd.conf.bak
+sudo awk -v token="$TOKEN" '
+  BEGIN { done=0 }
+  /^#?[[:space:]]*BEARER_TOKEN=/ {
+    print "BEARER_TOKEN=\"" token "\""
+    done=1
+    next
+  }
+  { print }
+  END {
+    if (!done) print "BEARER_TOKEN=\"" token "\""
+  }
+' /etc/maludb/maludb-mc2dbd.conf.bak \
+  | sudo tee /etc/maludb/maludb-mc2dbd.conf >/dev/null
+sudo chown root:maludb /etc/maludb/maludb-mc2dbd.conf
+sudo chmod 0640 /etc/maludb/maludb-mc2dbd.conf
+
+sudo systemctl restart maludb-mc2dbd
+```
+
+Confirm the file contains a token and the listener is still running:
+
+```bash
+sudo awk -F= '/^BEARER_TOKEN=/{print "BEARER_TOKEN=<set>"}' /etc/maludb/maludb-mc2dbd.conf
+systemctl status maludb-mc2dbd --no-pager
+```
+
+Pass criterion: the first command prints `BEARER_TOKEN=<set>`, and
+`systemctl status` shows `Active: active (running)`.
+
+Unauthenticated requests should now fail:
+
+```bash
+curl -i -sS -X POST http://127.0.0.1:5329/ \
+    -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | head
+```
+
+Expected: `HTTP/1.1 401 Unauthorized`.
+
+Authenticated requests should still work:
+
+```bash
 curl -fsS -X POST http://127.0.0.1:5329/ \
     -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' \
     -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | jq .
 ```
+
+To edit manually instead, set this line in
+`/etc/maludb/maludb-mc2dbd.conf`:
+
+```conf
+BEARER_TOKEN="paste-the-generated-token-here"
+```
+
+Then run `sudo systemctl restart maludb-mc2dbd`.
 
 ### 6.5 Enabling native TLS
 
