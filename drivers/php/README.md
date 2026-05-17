@@ -19,7 +19,7 @@ in later versions.
 On Ubuntu 24.04:
 
 ```bash
-sudo apt install php-cli php-pgsql unzip
+sudo apt install php-cli php-pgsql postgresql-client unzip
 ```
 
 Composer is needed for the autoload + dev deps:
@@ -54,8 +54,14 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.profile
 Install the published package from Packagist:
 
 ```bash
+cd /path/to/your/php-project
 composer require maludb/client:^0.1
 ```
+
+If your web document root is a subdirectory of the Composer project, require
+the autoloader relative to that layout. For example, if Composer was run in
+`/var/www` and the script is `/var/www/html/index.php`, use
+`require __DIR__ . '/../vendor/autoload.php';`.
 
 Or run examples and tests from this source tree:
 
@@ -65,19 +71,56 @@ cd maludb-core/drivers/php
 composer install
 ```
 
+## Database setup
+
+Create a database and user on the PostgreSQL/MaluDB server:
+
+```bash
+sudo -u postgres createuser --pwprompt zozocal
+sudo -u postgres createdb -O zozocal zozocal
+sudo -u postgres psql -d zozocal -c 'CREATE EXTENSION IF NOT EXISTS maludb_core CASCADE;'
+```
+
+Allow the client host in the server's `pg_hba.conf`. For example, to allow
+client `192.168.100.157` to connect as user `zozocal` to database `zozocal`:
+
+```conf
+host    zozocal     zozocal     192.168.100.157/32     scram-sha-256
+```
+
+Reload PostgreSQL after editing `pg_hba.conf`:
+
+```bash
+sudo systemctl reload postgresql
+```
+
+Verify the connection from the client before testing PHP:
+
+```bash
+PGPASSWORD='your_password' psql \
+  -h 192.168.100.163 \
+  -p 5432 \
+  -U zozocal \
+  -d zozocal \
+  -c 'select current_user, current_database();'
+```
+
 ## Quickstart
 
 ```php
 <?php
+declare(strict_types=1);
+
+require __DIR__ . '/vendor/autoload.php';
+
 use MaluDB\Client;
 
-require 'vendor/autoload.php';
-
-// `postgresql:///mydb` would default pg's PDO to TCP+localhost which
-// then requires SCRAM password auth. Append ?host=/var/run/postgresql
-// for peer-auth via the Unix socket on a default PGDG install.
+// Use a PDO PostgreSQL DSN and pass credentials separately. This avoids
+// URL-encoding surprises when passwords contain special characters.
 $client = Client::fromDsn(
-    "postgresql:///mydb?host=/var/run/postgresql",
+    'pgsql:host=192.168.100.163;port=5432;dbname=zozocal;sslmode=disable',
+    'zozocal',
+    'your_password',
 );
 
 $sp = $client->registerSourcePackage(
@@ -97,6 +140,57 @@ $c1 = $client->registerClaim(
 foreach ($client->retrieve('api_gateway', null, null, null, null, null, 10) as $hit) {
     echo "$hit->objectType {$hit->objectId} {$hit->rank}\n";
 }
+```
+
+For a local PostgreSQL server using the default Unix socket, the DSN can be:
+
+```php
+$client = Client::fromDsn(
+    'pgsql:host=/var/run/postgresql;dbname=zozocal',
+    'zozocal',
+    'your_password',
+);
+```
+
+## Troubleshooting web 500s
+
+If a browser only shows HTTP 500, check the web server error log first:
+
+```bash
+sudo tail -n 100 /var/log/apache2/error.log
+```
+
+For temporary debugging, add this at the top of the PHP script:
+
+```php
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+```
+
+A missing autoloader means Composer was run in a different directory than the
+script expects. Use an absolute `__DIR__`-based path, such as:
+
+```php
+require __DIR__ . '/../vendor/autoload.php';
+```
+
+If `psql` connects but PHP still fails authentication, test PDO directly with
+the same DSN, user, and password:
+
+```php
+<?php
+ini_set('display_errors', '1');
+error_reporting(E_ALL);
+
+$pdo = new PDO(
+    'pgsql:host=192.168.100.163;port=5432;dbname=zozocal;sslmode=disable',
+    'zozocal',
+    'your_password',
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+);
+
+echo $pdo->query('select current_user')->fetchColumn() . PHP_EOL;
 ```
 
 ## Available methods
