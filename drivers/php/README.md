@@ -25,21 +25,53 @@ sudo apt install php-cli php-pgsql
 Composer is needed for the autoload + dev deps:
 
 ```bash
-# If composer isn't installed:
-curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# If composer isn't installed, install it system-wide:
+curl -sS https://getcomposer.org/installer -o composer-setup.php
+php composer-setup.php
+sudo mv composer.phar /usr/local/bin/composer
+rm composer-setup.php
+composer --version
+```
+
+If you do not have sudo access, install Composer for your user instead:
+
+```bash
+mkdir -p "$HOME/.local/bin"
+curl -sS https://getcomposer.org/installer | php -- --install-dir="$HOME/.local/bin" --filename=composer
+"$HOME/.local/bin/composer" --version
+```
+
+If the user-local `composer` command is not found in a new shell, add
+`$HOME/.local/bin` to your `PATH`:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.profile
+. ~/.profile
 ```
 
 ## Install
 
+The PHP driver is currently distributed from this repository. The
+Packagist package name is reserved as `maludb/client`, but a plain
+`composer require maludb/client` only works after the package has been
+published to Packagist.
+
+To run examples or tests from this source tree:
+
 ```bash
-composer require maludb/client
+git clone https://github.com/maludb/maludb-core.git
+cd maludb-core/drivers/php
+composer install
 ```
 
-Or from this source tree:
+To use the driver from another PHP project before the Packagist package is
+published, point Composer at your local checkout:
 
 ```bash
-cd drivers/php
-composer install
+cd /path/to/your/php-project
+composer init --no-interaction --name=local/maludb-app   # skip if composer.json already exists
+composer config repositories.maludb-client path /path/to/maludb-core/drivers/php
+composer require 'maludb/client:*@dev'
 ```
 
 ## Quickstart
