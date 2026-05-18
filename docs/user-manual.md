@@ -34,8 +34,8 @@ MaluDB is a memory DBMS built on PostgreSQL 17. It is delivered as:
 
 | | |
 |---|---|
-| Extension `default_version` | **0.71.0** (V4 GA; acceptance artefacts are `scripts/maludb-fieldtest-v4` (28-case live-DB walkthrough of every V4 surface), `bench/v4/run-bench` (deterministic-overlap descent baselines on fixture markdown + chat corpora), and `docs/v4/acceptance-matrix.md` mapping plan §12 criteria to test artefacts) |
-| Last release tag | **`v4.0.0`** at extension `0.71.0` (GA, 2026-05-15) |
+| Extension `default_version` | **0.72.0** (schema memory enablement; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
+| Last release tag | **`v4.0.0`** at extension `0.72.0` (GA, 2026-05-15) |
 | Supported PostgreSQL majors | 16, 17, 18 (PG 17 is the blocking CI target) |
 | Test suite | 74/74 `pg_regress` on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
 | Shipped services | `maludb_modeld`, `maludb_mc2dbd`, `mcp-broker`, `maludb-restd`, `maludb-realtimed`, `maludb-pageindexd` |
@@ -444,7 +444,70 @@ SELECT maludb_core.current_account_id();
 Admin and auditor roles bypass RLS by design. Grant them only to trusted service
 or audit roles.
 
-## 8. Model Providers and Aliases
+## 8. Schema Memory Enablement
+
+MaluDB keeps shared storage in `maludb_core`, but ordinary PostgreSQL schemas
+can opt in to schema-local memory views. The enablement step is explicit;
+creating a schema by itself does not add memory objects.
+
+```sql
+CREATE USER zozocal;
+GRANT maludb_memory_executor TO zozocal;
+CREATE SCHEMA zozocal AUTHORIZATION zozocal;
+
+SET ROLE zozocal;
+SET search_path TO zozocal, maludb_core, public;
+SELECT * FROM maludb_core.enable_memory_schema();
+```
+
+Operators can also run the wrapper script from `psql`:
+
+```bash
+psql -d mydb -v schema=zozocal -f sql/enable-memory-schema.sql
+```
+
+After enablement, tenant users query familiar schema-local names while rows stay
+owner-scoped in extension tables:
+
+```sql
+INSERT INTO zozocal.maludb_project(subject_type, canonical_name)
+VALUES ('project', 'zozocal migration');
+
+SELECT *
+FROM zozocal.maludb_subject;
+```
+
+Documents, raw ingest, embeddings, and pools use the same schema-local surface:
+
+```sql
+SELECT *
+FROM zozocal.maludb_unapplied_ingest;
+
+SELECT zozocal.maludb_upload_document(
+    p_title => 'Cutover notes',
+    p_content_text => 'Deploy window notes and operator comments',
+    p_source_type => 'document',
+    p_projects => ARRAY['zozocal migration']
+);
+
+SELECT *
+FROM zozocal.maludb_vector_search(
+    p_subject => 'zozocal migration',
+    p_query_embedding => maludb_core.vector_from_real_array('{1,0,0,0}'::real[])
+);
+
+INSERT INTO zozocal.maludb_memory_pool(pool_name, description)
+VALUES ('zozocal-coding-agent', 'Focused memory for Zozocal coding agents');
+
+SELECT *
+FROM zozocal.maludb_pool_search('zozocal-coding-agent', 'schema views', 20, false);
+```
+
+The generated facades include subjects, verbs, source packages, claims, facts,
+memories, documents, raw ingest, vector search, memory pools, prompt/model
+session objects, skills, workflow objects, and MCP catalog views.
+
+## 9. Model Providers and Aliases
 
 Model providers describe where model execution happens. Model aliases describe
 which model a user or session should request.
@@ -500,7 +563,7 @@ SELECT register_model_alias(
 Provider secrets are references, not literal credentials. Normal callers should
 read provider metadata through public views that omit `secret_ref`.
 
-## 9. Prompt Templates
+## 10. Prompt Templates
 
 Prompt templates are versioned. A template can use either the legacy `body`
 field or channel fields:
@@ -554,7 +617,7 @@ SELECT render_prompt(
     '{"name":"world","topic":"MaluDB"}'::jsonb);
 ```
 
-## 10. Sessions and Session Context
+## 11. Sessions and Session Context
 
 Session Context is short-term context for model sessions. It is not long-term
 memory, not a fact, not a claim, and not a source package.
@@ -609,7 +672,7 @@ SELECT close_session(1, 'closed');
 Every context block stores a content hash. Rendered prompts store prompt hashes,
 context hashes, and context block counts so prompt assembly can be audited.
 
-## 11. Model Requests and Responses
+## 12. Model Requests and Responses
 
 The preferred path is:
 
@@ -668,7 +731,7 @@ ORDER BY rendered_at DESC
 LIMIT 20;
 ```
 
-## 12. Vector Search
+## 13. Vector Search
 
 MaluDB has two vector surfaces:
 
@@ -769,7 +832,7 @@ SELECT * FROM search_memory_exact(
 SELECT ann_rebuild(:compartment_id);
 ```
 
-## 13. MC2DB Listener
+## 14. MC2DB Listener
 
 `maludb_mc2dbd` exposes MaluDB as an MCP-compatible JSON-RPC listener. Default
 development binding is:
@@ -858,7 +921,7 @@ This distinction matters for clients. A missing tool, bad input, permission
 problem, timeout, or upstream failure is a tool result, not a JSON-RPC protocol
 failure.
 
-## 14. Registering MC2DB Tools
+## 15. Registering MC2DB Tools
 
 Tools are catalog rows. Each row has an `implementation_type`:
 
@@ -1004,7 +1067,7 @@ JSON responses are returned as structured content. Non-JSON responses are
 returned as text content. Transport failures and non-2xx HTTP status codes
 surface as `UPSTREAM_ERROR`.
 
-## 15. MC2DB Security
+## 16. MC2DB Security
 
 Before exposing MC2DB beyond localhost:
 
@@ -1025,7 +1088,7 @@ Authorization: Bearer <token>
 The binary accepts `--bearer-token`, `BEARER_TOKEN`, or the legacy
 `MALUDB_MC2DBD_TOKEN` environment variable.
 
-## 16. Monitoring
+## 17. Monitoring
 
 The listener exposes Prometheus metrics:
 
@@ -1043,7 +1106,7 @@ Metric families:
 For PostgreSQL internals, run a standard PostgreSQL exporter in addition to the
 MC2DB listener metrics.
 
-## 17. Logs and Audit
+## 18. Logs and Audit
 
 System logs:
 
@@ -1078,7 +1141,7 @@ ORDER BY rendered_at DESC
 LIMIT 50;
 ```
 
-## 18. Backups
+## 19. Backups
 
 MaluDB R1.x uses ordinary PostgreSQL backup tools.
 
@@ -1097,7 +1160,7 @@ Also back up:
 
 Test restores regularly.
 
-## 19. Troubleshooting
+## 20. Troubleshooting
 
 ### `CREATE EXTENSION maludb_core` fails because `vector` is missing
 
@@ -1161,7 +1224,7 @@ SELECT maludb_core.current_account_id();
 
 Confirm the connected PostgreSQL role has the required LLM group role.
 
-## 20. Version 3 Preview
+## 21. Version 3 Preview
 
 Version 3 is the post-`v2.0.0-alpha` **platform-ergonomics** track. It does
 not revise the memory model, provenance, bitemporal discipline, three-stage
@@ -1198,7 +1261,7 @@ the version, release tag, supported PG majors, and shipped services/SDKs do
 not drift between `maludb_core.control`, [`README.md`](../README.md),
 [`CHANGELOG.md`](../CHANGELOG.md), and this manual.
 
-## 21. Further Reading
+## 22. Further Reading
 
 - [Install Guide](install.md)
 - [Field Test Playbook](field-test.md)

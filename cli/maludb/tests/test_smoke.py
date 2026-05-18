@@ -22,6 +22,7 @@ from contextlib import redirect_stdout, redirect_stderr
 import psycopg
 
 from maludb_cli.__main__ import main
+from maludb_cli.db import connect
 
 
 def _conn():
@@ -94,6 +95,29 @@ class CliSmoke(unittest.TestCase):
         rc, out, _ = _run("status")
         self.assertEqual(rc, 0)
         self.assertIn("extension_version", out)
+
+    def test_02b_schema_env_prefixes_search_path(self):
+        class Args:
+            db = os.environ.get("MALUDB_DB", "contrib_regression")
+            host = None
+            port = None
+            user = None
+            password = None
+            schema = None
+
+        saved = os.environ.get("MALUDB_SCHEMA")
+        os.environ["MALUDB_SCHEMA"] = "driver_tenant"
+        try:
+            with connect(Args()) as conn, conn.cursor() as cur:
+                cur.execute("SHOW search_path")
+                self.assertTrue(
+                    cur.fetchone()[0].startswith("driver_tenant, maludb_core, public")
+                )
+        finally:
+            if saved is None:
+                os.environ.pop("MALUDB_SCHEMA", None)
+            else:
+                os.environ["MALUDB_SCHEMA"] = saved
 
     def test_03_install_doctor(self):
         rc, out, _ = _run("--format", "json", "install", "doctor")

@@ -23,6 +23,16 @@ from .models import (
 )
 
 
+def _quote_identifier(identifier: str) -> str:
+    return '"' + identifier.replace('"', '""') + '"'
+
+
+def _search_path(schema: str | None) -> str:
+    if schema is None or schema == "":
+        return "maludb_core, public"
+    return f"{_quote_identifier(schema)}, maludb_core, public"
+
+
 class MaluDBClient:
     """A synchronous MaluDB client.
 
@@ -35,21 +45,22 @@ class MaluDBClient:
     # ------------------------------------------------------------ #
     # construction
     # ------------------------------------------------------------ #
-    def __init__(self, conn: psycopg.Connection):
+    def __init__(self, conn: psycopg.Connection, schema: str | None = None):
         self.raw: psycopg.Connection = conn
         # Pin the search path so every helper resolves under
-        # maludb_core without the caller having to set search_path.
+        # the tenant schema (when supplied) and maludb_core without
+        # the caller having to set search_path.
         with self.raw.cursor() as cur:
-            cur.execute("SET search_path = maludb_core, public")
+            cur.execute(f"SET search_path = {_search_path(schema)}")
         self.raw.commit()
 
     @classmethod
-    def from_dsn(cls, dsn: str, **kwargs: Any) -> "MaluDBClient":
-        return cls(psycopg.connect(dsn, **kwargs))
+    def from_dsn(cls, dsn: str, schema: str | None = None, **kwargs: Any) -> "MaluDBClient":
+        return cls(psycopg.connect(dsn, **kwargs), schema=schema)
 
     @classmethod
-    def from_connection(cls, conn: psycopg.Connection) -> "MaluDBClient":
-        return cls(conn)
+    def from_connection(cls, conn: psycopg.Connection, schema: str | None = None) -> "MaluDBClient":
+        return cls(conn, schema=schema)
 
     def close(self) -> None:
         self.raw.close()

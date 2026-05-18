@@ -2,8 +2,8 @@
  * MaluDB Node.js client.
  *
  * Wraps a `pg.Client` (or pool) and exposes typed methods over the
- * maludb_core SQL surface. Calls pin `search_path = maludb_core, public`
- * on connect.
+ * maludb_core SQL surface. Calls pin `search_path` to the tenant schema
+ * (when supplied) and maludb_core on connect.
  */
 
 import pg from "pg";
@@ -28,6 +28,11 @@ export interface MaluDBClientOptions {
   database?: string;
   user?: string;
   password?: string;
+  schema?: string;
+}
+
+function quoteIdent(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
 }
 
 export class MaluDBClient {
@@ -39,9 +44,13 @@ export class MaluDBClient {
 
   /** Connect and pin search_path. */
   static async connect(opts: MaluDBClientOptions): Promise<MaluDBClient> {
-    const client = new Client(opts);
+    const { schema, ...clientOpts } = opts;
+    const client = new Client(clientOpts);
     await client.connect();
-    await client.query("SET search_path = maludb_core, public");
+    const searchPath = schema
+      ? `${quoteIdent(schema)}, maludb_core, public`
+      : "maludb_core, public";
+    await client.query(`SET search_path = ${searchPath}`);
     return new MaluDBClient(client);
   }
 

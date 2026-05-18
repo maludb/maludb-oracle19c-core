@@ -24,6 +24,21 @@ sudo -u postgres psql -d tutorial -c "CREATE EXTENSION maludb_core CASCADE"
 The `CASCADE` pulls in `vector`, `btree_gist`, and `pg_trgm`
 automatically.
 
+To use MaluDB like a standard PostgreSQL schema, opt an application schema into
+the memory facades:
+
+```sql
+CREATE USER zozocal;
+GRANT maludb_memory_executor TO zozocal;
+CREATE SCHEMA zozocal AUTHORIZATION zozocal;
+SET ROLE zozocal;
+SET search_path TO zozocal, maludb_core, public;
+SELECT * FROM maludb_core.enable_memory_schema();
+SELECT * FROM maludb_subject;
+RESET ROLE;
+SET search_path = maludb_core, public;
+```
+
 ## 1. Record the source
 
 Start an interactive `psql` session against the tutorial database and

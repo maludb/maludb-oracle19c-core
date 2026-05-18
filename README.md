@@ -14,7 +14,7 @@ provision PostgreSQL manually.
 
 | | |
 |---|---|
-| Version | **0.71.0** (extension) — tagged `v4.0.0` (GA, 2026-05-15). V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
+| Version | **0.72.0** (extension) — tagged `v4.0.0` (GA, 2026-05-15). V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
 | Test suite | **74/74 pg_regress** on PG 17, 7/7 maludb-restd smoke, 4/4 maludb-realtimed smoke, 11/11 maludb CLI smoke, 12/12 libmaludb v0.2 smoke, 14/14 maludb-pageindexd parser smoke |
 | Drivers | Python, Node.js, PHP, C — all four validated against the live extension |
 | External services | `maludb_modeld` (model gateway) + `maludb_mc2dbd` (database MCP listener) + `mcp-broker` (external-tool MCP broker) + `maludb-restd` (V3 REST gateway) + `maludb-realtimed` (V3 SSE event stream) + `maludb-pageindexd` (V4 PageIndex / ChatIndex builder) |
@@ -80,6 +80,21 @@ sudo -u postgres psql -d mydb -c "CREATE EXTENSION maludb_core CASCADE"
 
 # 3. Walk through the first scenario.
 psql -d mydb -f examples/01-ingest-to-replay.sql
+```
+
+### Enable MaluDB memory in an application schema
+
+MaluDB does not modify ordinary PostgreSQL schemas automatically. To opt a
+schema into schema-local memory views:
+
+```sql
+CREATE USER zozocal;
+GRANT maludb_memory_executor TO zozocal;
+CREATE SCHEMA zozocal AUTHORIZATION zozocal;
+SET ROLE zozocal;
+SET search_path TO zozocal, maludb_core, public;
+SELECT * FROM maludb_core.enable_memory_schema();
+SELECT * FROM maludb_subject;
 ```
 
 The detailed install playbook is in [docs/install.md](docs/install.md).

@@ -7,10 +7,11 @@ versions correspond to the extension migration chain
 
 ## v4.0.0 — 2026-05-15
 
-Version 4 GA. No new migration; default_version stays at 0.71.0.
-This tag promotes the rc.1 V4 surface after the fresh-VM acceptance
-gate and keeps the release artefacts aligned for public install
-testing.
+Version 4 GA plus schema memory enablement. The extension default_version
+advances to 0.72.0 so ordinary PostgreSQL schemas can explicitly opt in to
+schema-local MaluDB memory facades with `maludb_core.enable_memory_schema()`.
+The V4 surface remains governed by the fresh-VM acceptance gate and keeps the
+release artefacts aligned for public install testing.
 
 The GA surface includes:
 
@@ -18,6 +19,10 @@ The GA surface includes:
   Verbatim Source Archive.
 * SQL, MC2DB, REST, CLI, and C / Python / Node.js / PHP SDK access
   to the V4 tree build, append/list, ask, and supersession flows.
+* Schema-local facades for subjects, verbs, memories, documents, raw
+  ingest, vector search, memory pools, prompt/model-session objects,
+  skills, workflow objects, and MCP catalog objects backed by shared
+  `maludb_core` storage.
 * `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and
   `docs/v4/acceptance-matrix.md` as the acceptance artefacts for
   the V4 plan.

@@ -158,7 +158,45 @@ static char *int64_array_literal(const int64_t *ids, size_t count)
 /* ------------------------------------------------------------------ */
 /* Connection lifecycle                                                */
 /* ------------------------------------------------------------------ */
-maludb_t *maludb_connect(const char *dsn)
+static int set_search_path(maludb_t *m, const char *schema)
+{
+    PGresult *r = NULL;
+    if (schema && *schema) {
+        char *quoted = PQescapeIdentifier(m->conn, schema, strlen(schema));
+        if (!quoted) {
+            set_error(m, MALUDB_ERR_GENERIC, "quote schema identifier failed");
+            return -1;
+        }
+        const char *suffix = ", maludb_core, public";
+        size_t sql_len = strlen("SET search_path = ") + strlen(quoted) + strlen(suffix) + 1;
+        char *sql = malloc(sql_len);
+        if (!sql) {
+            PQfreemem(quoted);
+            set_error(m, MALUDB_ERR_GENERIC, "set_search_path: out of memory");
+            return -1;
+        }
+        snprintf(sql, sql_len, "SET search_path = %s%s", quoted, suffix);
+        r = PQexec(m->conn, sql);
+        free(sql);
+        PQfreemem(quoted);
+    } else {
+        r = PQexec(m->conn, "SET search_path = maludb_core, public");
+    }
+    if (!r) {
+        set_error(m, MALUDB_ERR_GENERIC, "set_search_path: command failed");
+        return -1;
+    }
+    if (PQresultStatus(r) != PGRES_COMMAND_OK) {
+        set_error_from_result(m, r);
+        PQclear(r);
+        return -1;
+    }
+    PQclear(r);
+    m->last_code = MALUDB_OK;
+    return 0;
+}
+
+maludb_t *maludb_connect_schema(const char *dsn, const char *schema)
 {
     maludb_t *m = calloc(1, sizeof *m);
     if (!m) return NULL;
@@ -167,12 +205,13 @@ maludb_t *maludb_connect(const char *dsn)
         set_error(m, MALUDB_ERR_CONNECT, "%s", PQerrorMessage(m->conn));
         return m; /* caller checks last_error_code */
     }
-    PGresult *r = PQexec(m->conn, "SET search_path = maludb_core, public");
-    if (PQresultStatus(r) != PGRES_COMMAND_OK) {
-        set_error_from_result(m, r);
-    }
-    PQclear(r);
+    (void)set_search_path(m, schema);
     return m;
+}
+
+maludb_t *maludb_connect(const char *dsn)
+{
+    return maludb_connect_schema(dsn, NULL);
 }
 
 void maludb_close(maludb_t *m)
@@ -204,6 +243,18 @@ char *maludb_version(maludb_t *m)
     char *out = scalar_string(r);
     PQclear(r);
     if (!out) set_error(m, MALUDB_ERR_GENERIC, "version: empty result");
+    else m->last_code = MALUDB_OK;
+    return out;
+}
+
+char *maludb_search_path(maludb_t *m)
+{
+    if (!m || PQstatus(m->conn) != CONNECTION_OK) return NULL;
+    PGresult *r = exec_params(m, "SHOW search_path", 0, NULL);
+    if (!r) return NULL;
+    char *out = scalar_string(r);
+    PQclear(r);
+    if (!out) set_error(m, MALUDB_ERR_GENERIC, "search_path: empty result");
     else m->last_code = MALUDB_OK;
     return out;
 }

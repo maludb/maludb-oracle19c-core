@@ -15,7 +15,7 @@ use PDOException;
  *
  * Wraps a PDO_PGSQL connection. Use {@see fromDsn()} to build one,
  * or pass an existing PDO via {@see fromPdo()}. Search path is pinned
- * to "maludb_core, public" at connect time.
+ * to "[schema], maludb_core, public" at connect time.
  *
  * Numeric returns come back from libpq as strings; we cast to int /
  * float at the boundary. JSONB returns are decoded to associative
@@ -25,26 +25,39 @@ final class Client
 {
     public PDO $raw;
 
-    public function __construct(PDO $pdo)
+    public function __construct(PDO $pdo, ?string $schema = null)
     {
         $this->raw = $pdo;
         $this->raw->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $this->raw->exec('SET search_path = maludb_core, public');
+        $searchPath = ($schema === null || $schema === '')
+            ? 'maludb_core, public'
+            : self::quoteIdentifier($schema) . ', maludb_core, public';
+        $this->raw->exec('SET search_path = ' . $searchPath);
     }
 
-    public static function fromDsn(string $dsn, ?string $user = null, ?string $password = null): self
+    public static function fromDsn(
+        string $dsn,
+        ?string $user = null,
+        ?string $password = null,
+        ?string $schema = null,
+    ): self
     {
         // Accept either a libpq URI ("postgresql:///mydb") or a PDO
         // DSN ("pgsql:host=…;dbname=…"). Normalise the URI form.
         if (str_starts_with($dsn, 'postgresql://') || str_starts_with($dsn, 'postgres://')) {
             $dsn = self::libpqToPdoDsn($dsn);
         }
-        return new self(new PDO($dsn, $user, $password));
+        return new self(new PDO($dsn, $user, $password), $schema);
     }
 
-    public static function fromPdo(PDO $pdo): self
+    public static function fromPdo(PDO $pdo, ?string $schema = null): self
     {
-        return new self($pdo);
+        return new self($pdo, $schema);
+    }
+
+    private static function quoteIdentifier(string $identifier): string
+    {
+        return '"' . str_replace('"', '""', $identifier) . '"';
     }
 
     private static function libpqToPdoDsn(string $uri): string

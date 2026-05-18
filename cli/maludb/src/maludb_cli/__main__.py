@@ -39,6 +39,8 @@ def _build_parser() -> argparse.ArgumentParser:
         help="PostgreSQL user (env MALUDB_USER).")
     parser.add_argument("--password", default=os.environ.get("MALUDB_PASSWORD"),
         help="PostgreSQL password (env MALUDB_PASSWORD).")
+    parser.add_argument("--schema", default=os.environ.get("MALUDB_SCHEMA"),
+        help="Tenant schema to prefix in search_path (env MALUDB_SCHEMA).")
 
     sub = parser.add_subparsers(dest="cmd", required=True, metavar="<command>")
 

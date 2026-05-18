@@ -78,6 +78,7 @@ typedef struct {
 
 /* ----- connection lifecycle --------------------------------------- */
 MALUDB_API maludb_t *maludb_connect(const char *dsn);
+MALUDB_API maludb_t *maludb_connect_schema(const char *dsn, const char *schema);
 MALUDB_API void      maludb_close(maludb_t *m);
 
 /* ----- error inspection ------------------------------------------- */
@@ -87,6 +88,7 @@ MALUDB_API const char      *maludb_last_error_message(const maludb_t *m);
 /* ----- version probe ---------------------------------------------- */
 /* Returns a heap-allocated string; caller free()s. NULL on error. */
 MALUDB_API char *maludb_version(maludb_t *m);
+MALUDB_API char *maludb_search_path(maludb_t *m);
 
 /* ----- ingest helpers --------------------------------------------- */
 MALUDB_API int64_t maludb_register_source_package(

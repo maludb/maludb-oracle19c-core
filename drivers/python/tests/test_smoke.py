@@ -18,6 +18,18 @@ def test_version(client: MaluDBClient) -> None:
     assert v.startswith("0."), v
 
 
+def test_schema_search_path(dsn: str) -> None:
+    client = MaluDBClient.from_dsn(dsn, schema="driver_tenant")
+    try:
+        with client.raw.cursor() as cur:
+            cur.execute("SHOW search_path")
+            row = cur.fetchone()
+        assert row is not None
+        assert row[0].startswith("driver_tenant, maludb_core, public")
+    finally:
+        client.close()
+
+
 def test_ingest_to_retrieve(client: MaluDBClient, tag: str) -> None:
     sp = client.register_source_package(
         source_type="log",

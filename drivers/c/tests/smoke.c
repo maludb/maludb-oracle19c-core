@@ -54,6 +54,14 @@ int main(void)
     check("matches /^0\\./", v && v[0] == '0' && v[1] == '.', v ? v : "(null)");
     free(v);
 
+    maludb_t *tenant = maludb_connect_schema(dsn, "driver_tenant");
+    char *tenant_path = tenant ? maludb_search_path(tenant) : NULL;
+    check("schema connect prefixes search_path",
+          tenant_path && !strncmp(tenant_path, "driver_tenant, maludb_core, public", 35),
+          tenant_path ? tenant_path : (tenant ? maludb_last_error_message(tenant) : "alloc"));
+    free(tenant_path);
+    maludb_close(tenant);
+
     /* ingest → retrieve */
     printf("ingest → retrieve\n");
     char content[128], origin[128];

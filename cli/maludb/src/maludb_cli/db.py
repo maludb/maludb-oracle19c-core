@@ -1,8 +1,8 @@
 """Connection helper for the maludb CLI.
 
-Single connection per invocation; pins search_path = maludb_core,
-public so unqualified table refs inside the extension's SECURITY
-INVOKER helpers resolve.
+Single connection per invocation; pins search_path to the optional
+tenant schema and maludb_core so unqualified table refs inside the
+extension's SECURITY INVOKER helpers resolve.
 """
 
 from __future__ import annotations
@@ -12,6 +12,16 @@ import os
 from typing import Iterator
 
 import psycopg
+
+
+def _quote_identifier(identifier: str) -> str:
+    return '"' + identifier.replace('"', '""') + '"'
+
+
+def _search_path(schema: str | None) -> str:
+    if not schema:
+        return "maludb_core, public"
+    return f"{_quote_identifier(schema)}, maludb_core, public"
 
 
 def _dsn(args) -> str:
@@ -38,7 +48,8 @@ def connect(args) -> Iterator[psycopg.Connection]:
     conn = psycopg.connect(_dsn(args), autocommit=False)
     try:
         with conn.cursor() as cur:
-            cur.execute("SET search_path TO maludb_core, public")
+            schema = getattr(args, "schema", None) or os.environ.get("MALUDB_SCHEMA")
+            cur.execute(f"SET search_path = {_search_path(schema)}")
         yield conn
         conn.commit()
     except Exception:

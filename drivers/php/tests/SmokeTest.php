@@ -32,6 +32,15 @@ final class SmokeTest extends TestCase
     }
 
     #[Test]
+    public function schemaOptionPrefixesSearchPath(): void
+    {
+        $dsn = getenv('MALUDB_TEST_DSN') ?: '';
+        $tenant = Client::fromDsn($dsn, schema: 'driver_tenant');
+        $path = $tenant->raw->query('SHOW search_path')->fetchColumn();
+        $this->assertStringStartsWith('driver_tenant, maludb_core, public', (string)$path);
+    }
+
+    #[Test]
     public function ingestToRetrieveRoundTrip(): void
     {
         $sp = $this->client->registerSourcePackage(

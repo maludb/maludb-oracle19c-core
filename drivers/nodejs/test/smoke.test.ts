@@ -34,6 +34,22 @@ describe("maludb driver smoke", () => {
     assert.match(v, /^0\./);
   });
 
+  it("schema option prefixes search_path", async () => {
+    const tenant = await MaluDBClient.connect({
+      connectionString: dsn,
+      schema: "driver_tenant",
+    });
+    try {
+      const result = await tenant.raw.query("SHOW search_path");
+      assert.ok(
+        String(result.rows[0].search_path).startsWith("driver_tenant, maludb_core, public"),
+        result.rows[0].search_path,
+      );
+    } finally {
+      await tenant.end();
+    }
+  });
+
   it("ingest → retrieve round trip", async () => {
     const sp = await client.registerSourcePackage({
       sourceType: "log",

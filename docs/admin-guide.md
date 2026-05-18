@@ -22,14 +22,17 @@ prompts, providers, and the model gateway.
 Grant a real PG user a tenant role:
 
 ```sql
-CREATE USER alice;
-GRANT maludb_memory_executor TO alice;
--- Each tenant should own a PG schema:
-CREATE SCHEMA alice AUTHORIZATION alice;
+CREATE USER zozocal;
+GRANT maludb_memory_executor TO zozocal;
+CREATE SCHEMA zozocal AUTHORIZATION zozocal;
+SET ROLE zozocal;
+SET search_path TO zozocal, maludb_core, public;
+SELECT * FROM maludb_core.enable_memory_schema();
 ```
 
-After login, `alice` should `SET search_path TO alice, maludb_core, public`
-so `current_schema()` resolves to her tenant.
+After login, the schema owner should keep `search_path` in that order so
+schema-local facades such as `maludb_subject`, `maludb_document`, and
+`maludb_memory_pool` resolve before the shared extension schema.
 
 ## 2. Backups
 
@@ -141,7 +144,7 @@ upgrade an existing database:
 ```bash
 # After `sudo apt upgrade maludb` lands the new files:
 sudo -u postgres psql -d mydb -c \
-    "ALTER EXTENSION maludb_core UPDATE TO '0.71.0'"
+    "ALTER EXTENSION maludb_core UPDATE TO '0.72.0'"
 ```
 
 The migration chain handles incremental upgrades. Always run on

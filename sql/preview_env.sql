@@ -6,11 +6,14 @@ SET search_path TO maludb_core, public;
 -- Test 1: preview_env_create with the default (production_data=false)
 -- seed_policy succeeds.
 -- ---------------------------------------------------------------------
-SELECT preview_env_create('pe_smoke', '0.71.0',
+SELECT preview_env_create('pe_smoke', '0.72.0',
                           '{"production_data": false}'::jsonb,
                           NULL, 'V3-ENV-01 smoke') AS env_id \gset e_
 
-SELECT name, base_migration, current_migration, anonymizer_ref
+SELECT name,
+       base_migration,
+       current_migration,
+       COALESCE(anonymizer_ref, '<null>') AS anonymizer_ref
 FROM malu$preview_env WHERE env_id = :'e_env_id'::bigint;
 
 -- ---------------------------------------------------------------------
@@ -18,7 +21,7 @@ FROM malu$preview_env WHERE env_id = :'e_env_id'::bigint;
 -- ---------------------------------------------------------------------
 DO $body$
 BEGIN
-    PERFORM preview_env_create('pe_prod_bad', '0.71.0',
+    PERFORM preview_env_create('pe_prod_bad', '0.72.0',
                                '{"production_data": true}'::jsonb,
                                NULL, NULL);
     RAISE EXCEPTION 'accepted production_data=true (test 2 fail)';
