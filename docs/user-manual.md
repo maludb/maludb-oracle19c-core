@@ -39,7 +39,7 @@ MaluDB is a memory DBMS built on PostgreSQL 17. It is delivered as:
 | Supported PostgreSQL majors | 16, 17, 18 (PG 17 is the blocking CI target) |
 | Test suite | 74/74 `pg_regress` on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
 | Shipped services | `maludb_modeld`, `maludb_mc2dbd`, `mcp-broker`, `maludb-restd`, `maludb-realtimed`, `maludb-pageindexd` |
-| Shipped SDKs | C (`libmaludb` v0.2.0 — pool/skill/node wrappers), Python, Node.js, PHP |
+| Shipped SDKs | C (`libmaludb` v0.2.0 — pool/skill/node wrappers), Python, Node.js, PHP (`maludb/client` via Composer) |
 | Shipped CLI | `maludb` v0.1.0 (V3-CLI-01) |
 | Roadmap status | `requirements.md` §9 Stages 1–16+ shipped through V4 GA — see [`version4-pageindex-plan.md`](../version4-pageindex-plan.md) |
 
@@ -92,7 +92,7 @@ MaluDB keeps PostgreSQL as the durable authority.
 | `maludb_mc2dbd` | MCP-compatible listener and tool dispatcher. |
 | `mcp-broker` | Reference broker for external (non-database) MCP tools (Stage 6). |
 | `mc2db` schema | Response-context procedures used by database-backed tools. |
-| SDKs | C (`libmaludb`), Python, Node.js, PHP — all four validated against the live extension. |
+| SDKs | C (`libmaludb`), Python, Node.js, PHP (`maludb/client` via Composer) — all four validated against the live extension. |
 
 Ordinary PostgreSQL backends do not run model inference and do not shell out.
 External model execution and external tool execution happen in sidecar

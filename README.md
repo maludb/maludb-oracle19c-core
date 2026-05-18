@@ -86,6 +86,15 @@ The detailed install playbook is in [docs/install.md](docs/install.md).
 A first-time tutorial is in [docs/getting-started.md](docs/getting-started.md).
 Day-2 operations are in [docs/admin-guide.md](docs/admin-guide.md).
 
+PHP applications can install the published Composer package directly:
+
+```bash
+composer require maludb/client:^0.1
+```
+
+See [drivers/php/README.md](drivers/php/README.md) for connection setup,
+autoloading notes, examples, and smoke-test instructions.
+
 ## Documents
 
 - [`requirements.md`](requirements.md) — what the system must satisfy.
