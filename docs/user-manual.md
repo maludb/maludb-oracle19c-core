@@ -496,7 +496,7 @@ FROM zozocal.maludb_vector_search(
     p_query_embedding => maludb_core.vector_from_real_array('{1,0,0,0}'::real[])
 );
 
-INSERT INTO zozocal.maludb_memory_pool(pool_name, description)
+INSERT INTO zozocal.maludb_memory_pool(pool_name, task_objective)
 VALUES ('zozocal-coding-agent', 'Focused memory for Zozocal coding agents');
 
 SELECT *
