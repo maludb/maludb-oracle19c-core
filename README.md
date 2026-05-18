@@ -92,6 +92,13 @@ PHP applications can install the published Composer package directly:
 composer require maludb/client:^0.1
 ```
 
+If Composer reports that ZIP extraction tools are missing, install
+`unzip` or `7z` first. On Ubuntu:
+
+```bash
+sudo apt install unzip
+```
+
 See [drivers/php/README.md](drivers/php/README.md) for connection setup,
 autoloading notes, examples, and smoke-test instructions.
 

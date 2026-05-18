@@ -16,7 +16,8 @@ in later versions.
 | Extensions | `ext-pdo`, `ext-pdo_pgsql`, `ext-json` |
 | PostgreSQL | maludb_core 0.41.0+ installed in the target DB |
 
-On Ubuntu 24.04:
+On Ubuntu 24.04, install PHP, the PostgreSQL PDO driver, the PostgreSQL
+client, and `unzip` so Composer can extract package archives:
 
 ```bash
 sudo apt install php-cli php-pgsql postgresql-client unzip
@@ -58,12 +59,15 @@ cd /path/to/your/php-project
 composer require maludb/client:^0.1
 ```
 
+No path-repository override is needed for normal application use.
+
 If your web document root is a subdirectory of the Composer project, require
 the autoloader relative to that layout. For example, if Composer was run in
 `/var/www` and the script is `/var/www/html/index.php`, use
 `require __DIR__ . '/../vendor/autoload.php';`.
 
-Or run examples and tests from this source tree:
+Use this source tree only when developing the driver itself or running its
+examples and tests:
 
 ```bash
 git clone https://github.com/maludb/maludb-core.git
