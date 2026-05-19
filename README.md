@@ -14,7 +14,7 @@ provision PostgreSQL manually.
 
 | | |
 |---|---|
-| Version | **0.73.0** (extension, unreleased skill discovery update) — latest release tag `v4.0.0` shipped extension 0.72.0 on 2026-05-15. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
+| Version | **0.73.0** (extension) — release tag `v4.1.0` shipped the schema-local skill discovery update on 2026-05-19. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
 | Test suite | **79 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
 | Drivers | Python, Node.js, PHP, C — all four validated against the live extension |
 | External services | `maludb_modeld` (model gateway) + `maludb_mc2dbd` (database MCP listener) + `mcp-broker` (external-tool MCP broker) + `maludb-restd` (V3 REST gateway) + `maludb-realtimed` (V3 SSE event stream) + `maludb-pageindexd` (V4 PageIndex / ChatIndex builder) |

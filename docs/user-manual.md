@@ -34,8 +34,8 @@ MaluDB is a memory DBMS built on PostgreSQL 17. It is delivered as:
 
 | | |
 |---|---|
-| Extension `default_version` | **0.73.0** (unreleased schema skill discovery update; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
-| Last release tag | **`v4.0.0`** at extension `0.72.0` (GA, 2026-05-15) |
+| Extension `default_version` | **0.73.0** (schema skill discovery update; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
+| Last release tag | **`v4.1.0`** at extension `0.73.0` (schema skill discovery, 2026-05-19) |
 | Supported PostgreSQL majors | 16, 17, 18 (PG 17 is the blocking CI target) |
 | Test suite | 79 `pg_regress` targets on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
 | Shipped services | `maludb_modeld`, `maludb_mc2dbd`, `mcp-broker`, `maludb-restd`, `maludb-realtimed`, `maludb-pageindexd` |
@@ -45,7 +45,7 @@ MaluDB is a memory DBMS built on PostgreSQL 17. It is delivered as:
 
 For day-to-day operations the version that matters is the **extension migration
 chain version** (`maludb_core.control`'s `default_version`), the **latest release
-tag** (`v4.0.0`), and the **supported PG majors**. These values are checked
+tag** (`v4.1.0`), and the **supported PG majors**. These values are checked
 across `maludb_core.control`, [`README.md`](../README.md),
 [`CHANGELOG.md`](../CHANGELOG.md), and this manual by
 `scripts/maludb-check-doc-consistency`.

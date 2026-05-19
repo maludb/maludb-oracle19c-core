@@ -7,6 +7,8 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+## v4.1.0 — 2026-05-19
+
 The extension default_version advances to 0.73.0 for skill discovery.
 Schema-local memory enablement now adds skill discovery facades and wrappers for
 manual subject, verb, and keyword tagging; public skills in `maludb_public`;
