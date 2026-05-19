@@ -39,6 +39,31 @@ RESET ROLE;
 SET search_path = maludb_core, public;
 ```
 
+The schema-local surface includes skill discovery. After `enable_memory_schema`,
+tenant users can add manual skill keywords and search their own plus public
+skills:
+
+```sql
+SET ROLE zozocal;
+SET search_path TO zozocal, maludb_core, public;
+
+INSERT INTO maludb_skill(skill_name, version, description, packaging_kind)
+VALUES ('meeting_action_item_extractor', '1.0.0',
+        'Extract action items from meeting transcripts.', 'markdown');
+
+INSERT INTO maludb_skill_keyword(skill_id, keyword)
+SELECT skill_id, 'action items'
+FROM maludb_skill
+WHERE skill_name = 'meeting_action_item_extractor';
+
+SELECT skill_name, owner_schema, match_reasons
+FROM maludb_skill_search(
+    p_query => 'extract action items',
+    p_subject => 'meeting transcript',
+    p_verb => 'extract'
+);
+```
+
 ## 1. Record the source
 
 Start an interactive `psql` session against the tutorial database and

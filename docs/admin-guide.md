@@ -15,6 +15,7 @@ rather than by schema:
 | `maludb_memory_executor` | Default authenticated role. CRUD on its own tenant's rows; SELECT via `MALU_ALL_*` views on other tenants where granted. |
 | `maludb_memory_auditor` | Read-only across all governed tables for compliance review. |
 | `maludb_memory_dba` | `BYPASSRLS`; system-level operations. **Do not assign to humans by default.** |
+| `maludb_skill_curator` | Curates public skills in `maludb_public`; use for trusted maintainers only. |
 
 The model/LLM tier has a parallel `maludb_llm_*` family covering
 prompts, providers, and the model gateway.
@@ -33,6 +34,12 @@ SELECT * FROM maludb_core.enable_memory_schema();
 After login, the schema owner should keep `search_path` in that order so
 schema-local facades such as `maludb_subject`, `maludb_document`, and
 `maludb_memory_pool` resolve before the shared extension schema.
+
+Public skill discovery uses the reserved `maludb_public` schema. Create it like
+any other memory-enabled schema, grant `maludb_skill_curator` only to trusted
+curators, and insert public rows through the schema-local `maludb_skill`,
+`maludb_skill_subject`, `maludb_skill_verb`, and `maludb_skill_keyword`
+facades. Tenant searches include public skills by default.
 
 ## 2. Backups
 
@@ -144,7 +151,7 @@ upgrade an existing database:
 ```bash
 # After `sudo apt upgrade maludb` lands the new files:
 sudo -u postgres psql -d mydb -c \
-    "ALTER EXTENSION maludb_core UPDATE TO '0.72.0'"
+    "ALTER EXTENSION maludb_core UPDATE TO '0.73.0'"
 ```
 
 The migration chain handles incremental upgrades. Always run on

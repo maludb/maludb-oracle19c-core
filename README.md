@@ -14,8 +14,8 @@ provision PostgreSQL manually.
 
 | | |
 |---|---|
-| Version | **0.72.0** (extension) — tagged `v4.0.0` (GA, 2026-05-15). V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
-| Test suite | **74/74 pg_regress** on PG 17, 7/7 maludb-restd smoke, 4/4 maludb-realtimed smoke, 11/11 maludb CLI smoke, 12/12 libmaludb v0.2 smoke, 14/14 maludb-pageindexd parser smoke |
+| Version | **0.73.0** (extension, unreleased skill discovery update) — latest release tag `v4.0.0` shipped extension 0.72.0 on 2026-05-15. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
+| Test suite | **79 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
 | Drivers | Python, Node.js, PHP, C — all four validated against the live extension |
 | External services | `maludb_modeld` (model gateway) + `maludb_mc2dbd` (database MCP listener) + `mcp-broker` (external-tool MCP broker) + `maludb-restd` (V3 REST gateway) + `maludb-realtimed` (V3 SSE event stream) + `maludb-pageindexd` (V4 PageIndex / ChatIndex builder) |
 | Roadmap | `requirements.md` §9 Stages 1–16+ shipped through V4 GA — see [`version4-pageindex-plan.md`](version4-pageindex-plan.md) |
@@ -39,6 +39,7 @@ provision PostgreSQL manually.
 | Authorization-aware retrieval (3-stage authz) | Stage 4 (S4-5) |
 | Workflow Extraction Engine | Stage 5 (S5-1) |
 | Skill Runtime as governed state machine | Stage 5 (S5-2) |
+| Skill discovery: manual subject / verb / keyword search, public skills, find/get/fork APIs | Stage 5 (S5-2) |
 | Active Memory Pool manager | Stage 5 (S5-3) |
 | Episode replay API | Stage 5 (S5-4) |
 | Local Node sync protocol | Stage 6 (S6-1) |

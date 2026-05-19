@@ -5,6 +5,14 @@ All notable changes to MaluDB land here. The format follows
 versions correspond to the extension migration chain
 (`maludb_core--X.Y--X.Z.sql`) plus a release tag.
 
+## Unreleased
+
+The extension default_version advances to 0.73.0 for skill discovery.
+Schema-local memory enablement now adds skill discovery facades and wrappers for
+manual subject, verb, and keyword tagging; public skills in `maludb_public`;
+and find/get/fork APIs exposed as SQL wrappers and MC2DB `skill.find`,
+`skill.get`, and `skill.fork` tools.
+
 ## v4.0.0 — 2026-05-15
 
 Version 4 GA plus schema memory enablement. The extension default_version

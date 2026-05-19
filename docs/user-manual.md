@@ -34,20 +34,21 @@ MaluDB is a memory DBMS built on PostgreSQL 17. It is delivered as:
 
 | | |
 |---|---|
-| Extension `default_version` | **0.72.0** (schema memory enablement; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
+| Extension `default_version` | **0.73.0** (unreleased schema skill discovery update; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
 | Last release tag | **`v4.0.0`** at extension `0.72.0` (GA, 2026-05-15) |
 | Supported PostgreSQL majors | 16, 17, 18 (PG 17 is the blocking CI target) |
-| Test suite | 74/74 `pg_regress` on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
+| Test suite | 79 `pg_regress` targets on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
 | Shipped services | `maludb_modeld`, `maludb_mc2dbd`, `mcp-broker`, `maludb-restd`, `maludb-realtimed`, `maludb-pageindexd` |
 | Shipped SDKs | C (`libmaludb` v0.2.0 — pool/skill/node wrappers), Python, Node.js, PHP (`maludb/client` via Composer) |
 | Shipped CLI | `maludb` v0.1.0 (V3-CLI-01) |
 | Roadmap status | `requirements.md` §9 Stages 1–16+ shipped through V4 GA — see [`version4-pageindex-plan.md`](../version4-pageindex-plan.md) |
 
 For day-to-day operations the version that matters is the **extension migration
-chain version** (`maludb_core.control`'s `default_version`), the **release tag**
-(`v4.0.0`), and the **supported PG majors**. The three MUST agree across
-`maludb_core.control`, [`README.md`](../README.md), [`CHANGELOG.md`](../CHANGELOG.md),
-and this manual — `tools/check-doc-version-consistency.sh` enforces this in CI.
+chain version** (`maludb_core.control`'s `default_version`), the **latest release
+tag** (`v4.0.0`), and the **supported PG majors**. These values are checked
+across `maludb_core.control`, [`README.md`](../README.md),
+[`CHANGELOG.md`](../CHANGELOG.md), and this manual by
+`scripts/maludb-check-doc-consistency`.
 
 ### 1.2 Shipped Memory Surface (Stages 1–7)
 
@@ -61,7 +62,8 @@ These memory-DBMS surfaces are user-facing today, not roadmap:
 - Retrieval planner, hybrid search (FTS + pg_trgm + graph + vector), query
   hints, three-stage authorization-aware retrieval (Stage 4).
 - Workflow Extraction Engine, Skill Runtime as a governed state machine,
-  Active Memory Pool manager, Episode replay (Stage 5).
+  manual subject / verb / keyword skill discovery, public skills, find/get/fork
+  skill APIs, Active Memory Pool manager, Episode replay (Stage 5).
 - Local Node sync protocol, Model Registry blue-green + dual-space routing,
   embedding adapters with capability negotiation, advanced MC2DB tools, and
   the external MCP broker reference implementation (Stage 6).
@@ -507,6 +509,47 @@ The generated facades include subjects, verbs, source packages, claims, facts,
 memories, documents, raw ingest, vector search, memory pools, prompt/model
 session objects, skills, workflow objects, and MCP catalog views.
 
+Skills can be made discoverable with manual subjects, verbs, and keywords:
+
+```sql
+INSERT INTO maludb_skill(skill_name, version, description, packaging_kind)
+VALUES ('meeting_action_item_extractor', '1.0.0',
+        'Extract action items from meeting transcripts.', 'markdown');
+
+INSERT INTO maludb_skill_keyword(skill_id, keyword)
+SELECT skill_id, 'action items'
+FROM maludb_skill
+WHERE skill_name = 'meeting_action_item_extractor';
+
+INSERT INTO maludb_skill_subject(skill_id, subject_name)
+SELECT skill_id, 'meeting transcript'
+FROM maludb_skill
+WHERE skill_name = 'meeting_action_item_extractor';
+
+INSERT INTO maludb_skill_verb(skill_id, verb_name)
+SELECT skill_id, 'extract'
+FROM maludb_skill
+WHERE skill_name = 'meeting_action_item_extractor';
+
+SELECT skill_name, owner_schema, match_reasons
+FROM maludb_skill_search(
+    p_query => 'extract action items',
+    p_subject => 'meeting transcript',
+    p_verb => 'extract'
+);
+
+SELECT payload
+FROM maludb_skill_get('maludb_public', 42);
+```
+
+Curated public skills live in the `maludb_public` schema with
+`visibility = 'public'`. Tenant schemas include them in `maludb_skill_search`
+by default, and can fork public or explicitly fork-granted skills with
+`maludb_skill_fork`. MC2DB clients use the matching `skill.find`, `skill.get`,
+and `skill.fork` tools. MC2DB calls must include the tenant schema explicitly:
+`skill.find` and `skill.get` require `requesting_schema`, and `skill.fork`
+requires `target_owner_schema`.
+
 ## 9. Model Providers and Aliases
 
 Model providers describe where model execution happens. Model aliases describe
@@ -880,7 +923,7 @@ curl -fsS -X POST http://127.0.0.1:5329/ \
 
 ### 13.1 Seeded Tools
 
-The `maludb.r10` server profile currently advertises 14 tools:
+The `maludb.r10` server profile currently advertises 17 tools:
 
 | Tool | Implementation |
 |---|---|
@@ -896,6 +939,9 @@ The `maludb.r10` server profile currently advertises 14 tools:
 | `maludb.models.submit` | `sql_function` |
 | `maludb.responses.get` | `sql_function` |
 | `maludb.memory.search.exact` | `sql_function` |
+| `skill.find` | `sql_function` |
+| `skill.get` | `sql_function` |
+| `skill.fork` | `sql_function` |
 | `maludb.r10.external_exec_demo` | `external_exec` exemplar |
 | `maludb.r10.mcp_proxy_demo` | `mcp_proxy` exemplar |
 
