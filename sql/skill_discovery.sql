@@ -246,7 +246,7 @@ FROM maludb_core.enable_memory_schema('skill_a');
 SELECT object_count >= 56 AS skill_b_enabled
 FROM maludb_core.enable_memory_schema('skill_b');
 
-SELECT enabled_version = '0.73.0' AS skill_schema_enabled_version_current
+SELECT enabled_version = '0.74.0' AS skill_schema_enabled_version_current
 FROM maludb_core.malu$enabled_schema
 WHERE schema_name = 'skill_a';
 

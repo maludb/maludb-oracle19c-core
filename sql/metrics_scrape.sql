@@ -23,7 +23,7 @@ SELECT length(metrics_prometheus_scrape()) > 200 AS has_body;
 
 SELECT position('# HELP maludb_extension_version' IN metrics_prometheus_scrape()) > 0 AS help_present,
        position('# TYPE maludb_audit_event_total counter' IN metrics_prometheus_scrape()) > 0 AS type_present,
-       position('maludb_extension_version{version="0.73.0"} 1' IN metrics_prometheus_scrape()) > 0 AS version_value_present;
+       position('maludb_extension_version{version="0.74.0"} 1' IN metrics_prometheus_scrape()) > 0 AS version_value_present;
 
 -- ---------------------------------------------------------------------
 -- Cleanup. (Nothing to clean; the catalog rows are extension-managed.)

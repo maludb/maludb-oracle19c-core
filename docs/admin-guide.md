@@ -17,6 +17,16 @@ rather than by schema:
 | `maludb_memory_dba` | `BYPASSRLS`; system-level operations. **Do not assign to humans by default.** |
 | `maludb_skill_curator` | Curates public skills in `maludb_public`; use for trusted maintainers only. |
 
+Most operators should grant the user-facing convenience roles instead of the
+internal `maludb_memory_*` roles:
+
+| Role | Use |
+|---|---|
+| `maludb_read` | Read schema-local MaluDB views and read-only search wrappers. |
+| `maludb_user` | Normal read/write use; maps to the memory executor role. |
+| `maludb_admin` | Trusted admin delegation. |
+| `maludb` | Short alias for `maludb_user` only on installs where that role name is not already occupied by an operator login. |
+
 The model/LLM tier has a parallel `maludb_llm_*` family covering
 prompts, providers, and the model gateway.
 
@@ -24,11 +34,17 @@ Grant a real PG user a tenant role:
 
 ```sql
 CREATE USER zozocal;
-GRANT maludb_memory_executor TO zozocal;
+GRANT maludb_user TO zozocal;
 CREATE SCHEMA zozocal AUTHORIZATION zozocal;
 SET ROLE zozocal;
 SET search_path TO zozocal, maludb_core, public;
 SELECT * FROM maludb_core.enable_memory_schema();
+```
+
+Scripted onboarding can use:
+
+```bash
+psql -d mydb -v role=zozocal -v access=write -f sql/grant-memory-access.sql
 ```
 
 After login, the schema owner should keep `search_path` in that order so
@@ -151,7 +167,7 @@ upgrade an existing database:
 ```bash
 # After `sudo apt upgrade maludb` lands the new files:
 sudo -u postgres psql -d mydb -c \
-    "ALTER EXTENSION maludb_core UPDATE TO '0.73.0'"
+    "ALTER EXTENSION maludb_core UPDATE TO '0.74.0'"
 ```
 
 The migration chain handles incremental upgrades. Always run on

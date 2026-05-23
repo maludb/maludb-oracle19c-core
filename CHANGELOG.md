@@ -7,6 +7,14 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.74.0 for PostgreSQL-style user
+onboarding. New convenience roles let operators grant access with normal role
+membership: `maludb_read` for schema-local read access, `maludb_user` for normal
+read/write use, and `maludb_admin` for admin delegation. Fresh installs also get
+a guarded short `maludb` alias when that role name is not already occupied by an
+operator login. The new `maludb_core.grant_memory_access()` helper and
+`sql/grant-memory-access.sql` script provide scripted onboarding.
+
 ## v4.1.0 — 2026-05-19
 
 The extension default_version advances to 0.73.0 for skill discovery.

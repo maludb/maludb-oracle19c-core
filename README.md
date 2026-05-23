@@ -14,8 +14,8 @@ provision PostgreSQL manually.
 
 | | |
 |---|---|
-| Version | **0.73.0** (extension) — release tag `v4.1.0` shipped the schema-local skill discovery update on 2026-05-19. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
-| Test suite | **79 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
+| Version | **0.74.0** (extension, unreleased onboarding role update) — latest release tag `v4.1.0` shipped extension 0.73.0 on 2026-05-19. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
+| Test suite | **80 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
 | Drivers | Python, Node.js, PHP, C — all four validated against the live extension |
 | External services | `maludb_modeld` (model gateway) + `maludb_mc2dbd` (database MCP listener) + `mcp-broker` (external-tool MCP broker) + `maludb-restd` (V3 REST gateway) + `maludb-realtimed` (V3 SSE event stream) + `maludb-pageindexd` (V4 PageIndex / ChatIndex builder) |
 | Roadmap | `requirements.md` §9 Stages 1–16+ shipped through V4 GA — see [`version4-pageindex-plan.md`](version4-pageindex-plan.md) |
@@ -40,6 +40,7 @@ provision PostgreSQL manually.
 | Workflow Extraction Engine | Stage 5 (S5-1) |
 | Skill Runtime as governed state machine | Stage 5 (S5-2) |
 | Skill discovery: manual subject / verb / keyword search, public skills, find/get/fork APIs | Stage 5 (S5-2) |
+| User onboarding roles: `GRANT maludb_user TO role`, read/admin variants, and guarded `GRANT maludb TO role` alias | Stage 5 (S5-2) |
 | Active Memory Pool manager | Stage 5 (S5-3) |
 | Episode replay API | Stage 5 (S5-4) |
 | Local Node sync protocol | Stage 6 (S6-1) |
@@ -90,13 +91,18 @@ schema into schema-local memory views:
 
 ```sql
 CREATE USER zozocal;
-GRANT maludb_memory_executor TO zozocal;
+GRANT maludb_user TO zozocal;
 CREATE SCHEMA zozocal AUTHORIZATION zozocal;
 SET ROLE zozocal;
 SET search_path TO zozocal, maludb_core, public;
 SELECT * FROM maludb_core.enable_memory_schema();
 SELECT * FROM maludb_subject;
 ```
+
+For read-only users, grant `maludb_read`. On fresh installs where the role name
+is available, `GRANT maludb TO app_user` is also a short alias for
+`GRANT maludb_user TO app_user`. Existing operator installs that already have a
+login role named `maludb` keep using `maludb_user` to avoid privilege confusion.
 
 The detailed install playbook is in [docs/install.md](docs/install.md).
 A first-time tutorial is in [docs/getting-started.md](docs/getting-started.md).

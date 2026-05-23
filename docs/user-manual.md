@@ -34,10 +34,10 @@ MaluDB is a memory DBMS built on PostgreSQL 17. It is delivered as:
 
 | | |
 |---|---|
-| Extension `default_version` | **0.73.0** (schema skill discovery update; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
+| Extension `default_version` | **0.74.0** (unreleased onboarding role update; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
 | Last release tag | **`v4.1.0`** at extension `0.73.0` (schema skill discovery, 2026-05-19) |
 | Supported PostgreSQL majors | 16, 17, 18 (PG 17 is the blocking CI target) |
-| Test suite | 79 `pg_regress` targets on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
+| Test suite | 80 `pg_regress` targets on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
 | Shipped services | `maludb_modeld`, `maludb_mc2dbd`, `mcp-broker`, `maludb-restd`, `maludb-realtimed`, `maludb-pageindexd` |
 | Shipped SDKs | C (`libmaludb` v0.2.0 — pool/skill/node wrappers), Python, Node.js, PHP (`maludb/client` via Composer) |
 | Shipped CLI | `maludb` v0.1.0 (V3-CLI-01) |
@@ -64,6 +64,9 @@ These memory-DBMS surfaces are user-facing today, not roadmap:
 - Workflow Extraction Engine, Skill Runtime as a governed state machine,
   manual subject / verb / keyword skill discovery, public skills, find/get/fork
   skill APIs, Active Memory Pool manager, Episode replay (Stage 5).
+- User-facing onboarding roles: `maludb_read`, `maludb_user`, `maludb_admin`,
+  plus a guarded short `maludb` alias where that role name is not already used
+  by an existing operator login.
 - Local Node sync protocol, Model Registry blue-green + dual-space routing,
   embedding adapters with capability negotiation, advanced MC2DB tools, and
   the external MCP broker reference implementation (Stage 6).
@@ -454,12 +457,34 @@ creating a schema by itself does not add memory objects.
 
 ```sql
 CREATE USER zozocal;
-GRANT maludb_memory_executor TO zozocal;
+GRANT maludb_user TO zozocal;
 CREATE SCHEMA zozocal AUTHORIZATION zozocal;
 
 SET ROLE zozocal;
 SET search_path TO zozocal, maludb_core, public;
 SELECT * FROM maludb_core.enable_memory_schema();
+```
+
+Use standard PostgreSQL role grants for day-to-day onboarding:
+
+```sql
+GRANT maludb_read TO reporting_user;     -- schema-local read access
+GRANT maludb_user TO app_user;           -- normal read/write use
+GRANT maludb_admin TO trusted_operator;  -- admin delegation
+```
+
+On fresh installs where `maludb` is not already an operator login, the extension
+also creates a guarded short alias:
+
+```sql
+GRANT maludb TO app_user;
+```
+
+Existing installs that already have a login or superuser named `maludb` leave
+that role untouched; use `maludb_user` or the helper script instead:
+
+```bash
+psql -d mydb -v role=app_user -v access=write -f sql/grant-memory-access.sql
 ```
 
 Operators can also run the wrapper script from `psql`:

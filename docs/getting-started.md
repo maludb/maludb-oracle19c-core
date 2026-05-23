@@ -29,7 +29,7 @@ the memory facades:
 
 ```sql
 CREATE USER zozocal;
-GRANT maludb_memory_executor TO zozocal;
+GRANT maludb_user TO zozocal;
 CREATE SCHEMA zozocal AUTHORIZATION zozocal;
 SET ROLE zozocal;
 SET search_path TO zozocal, maludb_core, public;
