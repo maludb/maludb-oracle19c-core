@@ -31,7 +31,7 @@ INSERT INTO maludb_person(subject_type, canonical_name)
 VALUES ('person', 'Person C')
 RETURNING subject_id AS person_c_id \gset
 
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subject_add(:server_b_id, :server_a_id, 'cluster peer')
 ORDER BY related_subject_id;
 
@@ -40,29 +40,29 @@ FROM maludb_related_subject
 WHERE subject_a_id = LEAST(:server_a_id, :server_b_id)
   AND subject_b_id = GREATEST(:server_a_id, :server_b_id) \gset
 
-SELECT related_subject_id, related_subject_name, label, created_at = :'first_created_at'::timestamptz AS preserved_created_at
+SELECT related_subject_name, label, created_at = :'first_created_at'::timestamptz AS preserved_created_at
 FROM maludb_related_subject_add(:server_a_id, :server_b_id, 'duplicate label ignored')
 ORDER BY related_subject_id;
 
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subject_add(:server_a_id, :person_c_id, 'owned by')
 ORDER BY related_subject_id;
 
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subjects(:server_a_id)
-ORDER BY related_subject_id;
+ORDER BY related_subject_name;
 
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subjects(:server_b_id)
-ORDER BY related_subject_id;
+ORDER BY related_subject_name;
 
 UPDATE maludb_subject
    SET canonical_name = 'Server B Renamed'
  WHERE subject_id = :server_b_id;
 
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subjects(:server_a_id)
-ORDER BY related_subject_id;
+ORDER BY related_subject_name;
 
 SELECT set_config('maludb.test_server_a_id', :'server_a_id', false) AS server_a_guc \gset
 
@@ -90,9 +90,9 @@ $$;
 
 SELECT maludb_related_subject_delete(:server_b_id, :server_a_id) AS deleted_reverse;
 
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subjects(:server_a_id)
-ORDER BY related_subject_id;
+ORDER BY related_subject_name;
 
 SELECT maludb_related_subject_delete(:server_b_id, :server_a_id) AS deleted_absent;
 

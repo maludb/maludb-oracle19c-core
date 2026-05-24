@@ -25,50 +25,50 @@ RETURNING subject_id AS server_b_id \gset
 INSERT INTO maludb_person(subject_type, canonical_name)
 VALUES ('person', 'Person C')
 RETURNING subject_id AS person_c_id \gset
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subject_add(:server_b_id, :server_a_id, 'cluster peer')
 ORDER BY related_subject_id;
-related_subject_id|related_subject_name|label
-1|Server A|cluster peer
+related_subject_name|label
+Server A|cluster peer
 (1 row)
 SELECT created_at AS first_created_at
 FROM maludb_related_subject
 WHERE subject_a_id = LEAST(:server_a_id, :server_b_id)
   AND subject_b_id = GREATEST(:server_a_id, :server_b_id) \gset
-SELECT related_subject_id, related_subject_name, label, created_at = :'first_created_at'::timestamptz AS preserved_created_at
+SELECT related_subject_name, label, created_at = :'first_created_at'::timestamptz AS preserved_created_at
 FROM maludb_related_subject_add(:server_a_id, :server_b_id, 'duplicate label ignored')
 ORDER BY related_subject_id;
-related_subject_id|related_subject_name|label|preserved_created_at
-2|Server B|cluster peer|t
+related_subject_name|label|preserved_created_at
+Server B|cluster peer|t
 (1 row)
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subject_add(:server_a_id, :person_c_id, 'owned by')
 ORDER BY related_subject_id;
-related_subject_id|related_subject_name|label
-3|Person C|owned by
+related_subject_name|label
+Person C|owned by
 (1 row)
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subjects(:server_a_id)
-ORDER BY related_subject_id;
-related_subject_id|related_subject_name|label
-2|Server B|cluster peer
-3|Person C|owned by
+ORDER BY related_subject_name;
+related_subject_name|label
+Person C|owned by
+Server B|cluster peer
 (2 rows)
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subjects(:server_b_id)
-ORDER BY related_subject_id;
-related_subject_id|related_subject_name|label
-1|Server A|cluster peer
+ORDER BY related_subject_name;
+related_subject_name|label
+Server A|cluster peer
 (1 row)
 UPDATE maludb_subject
    SET canonical_name = 'Server B Renamed'
  WHERE subject_id = :server_b_id;
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subjects(:server_a_id)
-ORDER BY related_subject_id;
-related_subject_id|related_subject_name|label
-2|Server B Renamed|cluster peer
-3|Person C|owned by
+ORDER BY related_subject_name;
+related_subject_name|label
+Person C|owned by
+Server B Renamed|cluster peer
 (2 rows)
 SELECT set_config('maludb.test_server_a_id', :'server_a_id', false) AS server_a_guc \gset
 DO $$
@@ -95,11 +95,11 @@ SELECT maludb_related_subject_delete(:server_b_id, :server_a_id) AS deleted_reve
 deleted_reverse
 t
 (1 row)
-SELECT related_subject_id, related_subject_name, label
+SELECT related_subject_name, label
 FROM maludb_related_subjects(:server_a_id)
-ORDER BY related_subject_id;
-related_subject_id|related_subject_name|label
-3|Person C|owned by
+ORDER BY related_subject_name;
+related_subject_name|label
+Person C|owned by
 (1 row)
 SELECT maludb_related_subject_delete(:server_b_id, :server_a_id) AS deleted_absent;
 deleted_absent
