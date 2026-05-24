@@ -7,7 +7,7 @@ WHERE n.nspname = 'maludb_core'
   AND c.relname LIKE 'malu$%';
  catalog_tables 
 ----------------
-            133
+            138
 (1 row)
 
 SELECT count(*) AS object_types FROM malu$object_type;
@@ -19,13 +19,13 @@ SELECT count(*) AS object_types FROM malu$object_type;
 SELECT count(*) AS relationship_types FROM malu$relationship_type;
  relationship_types 
 --------------------
-                 10
+                 16
 (1 row)
 
 SELECT count(*) AS source_types FROM malu$source_type;
  source_types 
 --------------
-            9
+           11
 (1 row)
 
 SELECT object_type, stage FROM malu$object_type
@@ -73,4 +73,3 @@ WHERE listener_name = 'default';
 ---------------+-----------+-----------+-------------
  default       | 127.0.0.1 |      5329 | f
 (1 row)
-

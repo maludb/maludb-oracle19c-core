@@ -10,6 +10,8 @@ Drives the daemon end-to-end against the live `contrib_regression` DB
   * GET /test/auth   — catalog-registered with auth_required=true;
     missing token returns 401 and a malu$rest_invocation reject row.
   * GET /test/auth with valid token — 200 + accept audit row.
+  * /v3/note, /v3/document, and /v3/chat/* — release catalog entries
+    expose typed dispatch arguments and scopes.
 """
 
 from __future__ import annotations
@@ -233,7 +235,58 @@ class RestdSmoke(unittest.TestCase):
         self.assertEqual(body["error"], "scope_missing")
         self.assertIn("memory.write", body["required_scopes"])
 
-    def test_09_typed_arg_missing_required(self):
+    def test_09_note_document_chat_catalog_entries(self):
+        with _conn() as c, c.cursor() as cur:
+            cur.execute(
+                """
+                SELECT method, path, required_scopes, arg_schema
+                  FROM maludb_core.malu$rest_endpoint
+                 WHERE (method, path) IN (
+                    ('POST', '/v3/note'),
+                    ('GET', '/v3/document'),
+                    ('POST', '/v3/chat/session'),
+                    ('POST', '/v3/chat/message'),
+                    ('POST', '/v3/chat/finalize'),
+                    ('GET', '/v3/chat/session'),
+                    ('GET', '/v3/chat/messages'))
+                 ORDER BY method, path
+                """
+            )
+            rows = cur.fetchall()
+
+        self.assertEqual(len(rows), 7)
+        by_endpoint = {(row[0], row[1]): row for row in rows}
+        self.assertEqual(by_endpoint[("POST", "/v3/note")][2], ["document.write"])
+        self.assertEqual(by_endpoint[("GET", "/v3/document")][2], ["document.read"])
+        self.assertEqual(by_endpoint[("GET", "/v3/chat/session")][2], ["chat.read"])
+        self.assertEqual(by_endpoint[("GET", "/v3/chat/messages")][2], ["chat.read"])
+        self.assertEqual(by_endpoint[("POST", "/v3/chat/message")][2], ["chat.write"])
+
+        note_args = {arg["name"]: arg for arg in by_endpoint[("POST", "/v3/note")][3]}
+        self.assertEqual(note_args["p_title"]["type"], "text")
+        self.assertTrue(note_args["p_title"]["required"])
+        self.assertEqual(note_args["p_projects"]["type"], "text[]")
+        self.assertFalse(note_args["p_projects"]["required"])
+        self.assertEqual(note_args["p_svpor_frames"]["type"], "jsonb")
+
+        document_args = {arg["name"]: arg for arg in by_endpoint[("GET", "/v3/document")][3]}
+        self.assertEqual(document_args["p_document_id"]["type"], "bigint")
+        self.assertEqual(document_args["p_document_id"]["in"], "query")
+
+        chat_start_args = {arg["name"]: arg for arg in by_endpoint[("POST", "/v3/chat/session")][3]}
+        self.assertEqual(chat_start_args["p_title"]["type"], "text")
+        self.assertEqual(chat_start_args["p_projects"]["type"], "text[]")
+        self.assertEqual(chat_start_args["p_svpor_frames"]["type"], "jsonb")
+
+        chat_message_args = {arg["name"]: arg for arg in by_endpoint[("POST", "/v3/chat/message")][3]}
+        self.assertEqual(chat_message_args["p_chat_session_id"]["type"], "bigint")
+        self.assertTrue(chat_message_args["p_chat_session_id"]["required"])
+        self.assertEqual(chat_message_args["p_content_jsonb"]["type"], "jsonb")
+
+        chat_read_args = {arg["name"]: arg for arg in by_endpoint[("GET", "/v3/chat/messages")][3]}
+        self.assertEqual(chat_read_args["p_chat_session_id"]["in"], "query")
+
+    def test_10_typed_arg_missing_required(self):
         # Bypass auth via the open /v3/metrics endpoint pattern? No —
         # /v3/metrics is GET with auth=true too. Instead seed a small
         # open endpoint with arg_schema for this test.

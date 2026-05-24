@@ -185,12 +185,12 @@ SET search_path TO sme_a, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-56
+73
 (1 row)
 SELECT object_count AS enable_refresh_object_count
 FROM maludb_core.enable_memory_schema();
 enable_refresh_object_count
-56
+73
 (1 row)
 SELECT bool_and(c.oid IS NOT NULL) AS enabled_facades_created
 FROM unnest(ARRAY[
