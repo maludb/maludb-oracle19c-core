@@ -1,0 +1,118 @@
+\set ECHO all
+\pset format unaligned
+SET client_min_messages = WARNING;
+CREATE EXTENSION IF NOT EXISTS maludb_core CASCADE;
+
+SET search_path TO maludb_core, public;
+
+DROP SCHEMA IF EXISTS svpor_related_a CASCADE;
+DROP ROLE IF EXISTS svpor_related_user;
+
+CREATE ROLE svpor_related_user NOLOGIN;
+GRANT maludb_memory_executor TO svpor_related_user;
+GRANT USAGE ON SCHEMA maludb_core TO svpor_related_user;
+CREATE SCHEMA svpor_related_a AUTHORIZATION svpor_related_user;
+
+SET ROLE svpor_related_user;
+SET search_path TO svpor_related_a, maludb_core, public;
+
+SELECT object_count > 0 AS enabled
+FROM maludb_core.enable_memory_schema();
+
+INSERT INTO maludb_subject(subject_type, canonical_name)
+VALUES ('Equipment', 'Server A')
+RETURNING subject_id AS server_a_id \gset
+
+INSERT INTO maludb_subject(subject_type, canonical_name)
+VALUES ('Equipment', 'Server B')
+RETURNING subject_id AS server_b_id \gset
+
+INSERT INTO maludb_person(subject_type, canonical_name)
+VALUES ('person', 'Person C')
+RETURNING subject_id AS person_c_id \gset
+
+SELECT related_subject_id, related_subject_name, label
+FROM maludb_related_subject_add(:server_b_id, :server_a_id, 'cluster peer')
+ORDER BY related_subject_id;
+
+SELECT created_at AS first_created_at
+FROM maludb_related_subject
+WHERE subject_a_id = LEAST(:server_a_id, :server_b_id)
+  AND subject_b_id = GREATEST(:server_a_id, :server_b_id) \gset
+
+SELECT related_subject_id, related_subject_name, label, created_at = :'first_created_at'::timestamptz AS preserved_created_at
+FROM maludb_related_subject_add(:server_a_id, :server_b_id, 'duplicate label ignored')
+ORDER BY related_subject_id;
+
+SELECT related_subject_id, related_subject_name, label
+FROM maludb_related_subject_add(:server_a_id, :person_c_id, 'owned by')
+ORDER BY related_subject_id;
+
+SELECT related_subject_id, related_subject_name, label
+FROM maludb_related_subjects(:server_a_id)
+ORDER BY related_subject_id;
+
+SELECT related_subject_id, related_subject_name, label
+FROM maludb_related_subjects(:server_b_id)
+ORDER BY related_subject_id;
+
+UPDATE maludb_subject
+   SET canonical_name = 'Server B Renamed'
+ WHERE subject_id = :server_b_id;
+
+SELECT related_subject_id, related_subject_name, label
+FROM maludb_related_subjects(:server_a_id)
+ORDER BY related_subject_id;
+
+SELECT set_config('maludb.test_server_a_id', :'server_a_id', false) AS server_a_guc \gset
+
+DO $$
+DECLARE
+    v_server_a_id bigint := current_setting('maludb.test_server_a_id')::bigint;
+BEGIN
+    PERFORM maludb_related_subject_add(v_server_a_id, v_server_a_id, 'self');
+    RAISE EXCEPTION 'self-link was not rejected';
+EXCEPTION WHEN invalid_parameter_value THEN
+    RAISE NOTICE 'OK: self-link rejected';
+END;
+$$;
+
+DO $$
+DECLARE
+    v_server_a_id bigint := current_setting('maludb.test_server_a_id')::bigint;
+BEGIN
+    PERFORM maludb_related_subject_add(v_server_a_id, 999999999, 'missing');
+    RAISE EXCEPTION 'missing related subject was not rejected';
+EXCEPTION WHEN foreign_key_violation THEN
+    RAISE NOTICE 'OK: missing related subject rejected';
+END;
+$$;
+
+SELECT maludb_related_subject_delete(:server_b_id, :server_a_id) AS deleted_reverse;
+
+SELECT related_subject_id, related_subject_name, label
+FROM maludb_related_subjects(:server_a_id)
+ORDER BY related_subject_id;
+
+SELECT maludb_related_subject_delete(:server_b_id, :server_a_id) AS deleted_absent;
+
+SELECT count(*) = 1 AS cascade_pair_created
+FROM maludb_related_subject_add(:server_a_id, :server_b_id, 'cascade pair');
+
+DELETE FROM maludb_subject WHERE subject_id = :server_b_id;
+
+SELECT count(*) AS remaining_server_b_edges
+FROM maludb_related_subject
+WHERE subject_a_id = :server_b_id
+   OR subject_b_id = :server_b_id;
+
+RESET ROLE;
+SET search_path TO maludb_core, public;
+
+DELETE FROM malu$svpor_subject_relationship WHERE owner_schema = 'svpor_related_a';
+DELETE FROM malu$svpor_subject WHERE owner_schema = 'svpor_related_a';
+DELETE FROM malu$enabled_schema_object WHERE schema_name = 'svpor_related_a';
+DELETE FROM malu$enabled_schema WHERE schema_name = 'svpor_related_a';
+DROP SCHEMA svpor_related_a CASCADE;
+DROP OWNED BY svpor_related_user;
+DROP ROLE svpor_related_user;

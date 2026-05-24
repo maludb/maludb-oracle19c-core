@@ -42,6 +42,7 @@ DECLARE
         'malu$vector_compartment',
         'malu$vector_subject',
         'malu$vector_verb',
+        'malu$svpor_subject_relationship',
         'malu$svpor_subject',
         'malu$svpor_verb',
         'malu$fact',
@@ -185,12 +186,12 @@ SET search_path TO sme_a, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-73
+77
 (1 row)
 SELECT object_count AS enable_refresh_object_count
 FROM maludb_core.enable_memory_schema();
 enable_refresh_object_count
-73
+77
 (1 row)
 SELECT bool_and(c.oid IS NOT NULL) AS enabled_facades_created
 FROM unnest(ARRAY[
@@ -204,6 +205,7 @@ FROM unnest(ARRAY[
     'maludb_document',
     'maludb_document_tag',
     'maludb_document_suggested_tag',
+    'maludb_related_subject',
     'maludb_raw_ingest',
     'maludb_unapplied_ingest',
     'maludb_memory_pool',
@@ -890,6 +892,7 @@ DECLARE
         'malu$vector_compartment',
         'malu$vector_subject',
         'malu$vector_verb',
+        'malu$svpor_subject_relationship',
         'malu$svpor_subject',
         'malu$svpor_verb',
         'malu$fact',
