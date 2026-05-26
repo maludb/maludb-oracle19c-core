@@ -186,13 +186,26 @@ SET search_path TO sme_a, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-75
+81
 (1 row)
 SELECT object_count AS enable_refresh_object_count
 FROM maludb_core.enable_memory_schema();
-enable_refresh_object_count
-75
-(1 row)
+ERROR:  cannot drop columns from view
+CONTEXT:  SQL statement "
+        CREATE OR REPLACE VIEW sme_a.maludb_subject AS
+        SELECT subject_id,
+               subject_type,
+               canonical_name,
+               aliases,
+               description,
+               created_at,
+               classifier_md
+          FROM maludb_core.malu$svpor_subject
+         WHERE owner_schema = 'sme_a'
+        WITH LOCAL CHECK OPTION
+    "
+PL/pgSQL function _enable_memory_schema_subject_facade(name) line 8 at EXECUTE
+PL/pgSQL function enable_memory_schema(name) line 18 at assignment
 SELECT bool_and(c.oid IS NOT NULL) AS enabled_facades_created
 FROM unnest(ARRAY[
     'maludb_subject',
@@ -794,7 +807,7 @@ b_pre_enable_subject_count
 RESET ROLE;
 SET search_path TO maludb_core, public;
 DROP SCHEMA sme_a CASCADE;
-NOTICE:  drop cascades to 74 other objects
+NOTICE:  drop cascades to 80 other objects
 DETAIL:  drop cascades to view sme_a.maludb_subject
 drop cascades to view sme_a.maludb_verb
 drop cascades to view sme_a.maludb_subject_verb
@@ -869,6 +882,12 @@ drop cascades to function sme_a.maludb_chat_messages(bigint)
 drop cascades to view sme_a.maludb_person
 drop cascades to view sme_a.maludb_subject_relationship
 drop cascades to function sme_a.maludb_subject_relationships(bigint,timestamp with time zone,text,text)
+drop cascades to function sme_a.maludb_subject_verb_link(bigint,bigint)
+drop cascades to function sme_a.maludb_subject_verb_unlink(bigint,bigint)
+drop cascades to function sme_a.maludb_svpor_relationship_delete(text,bigint,text,bigint,text)
+drop cascades to function sme_a.maludb_pool_remove_named_member(text,text,text)
+drop cascades to function sme_a.maludb_project_archive(bigint)
+drop cascades to function sme_a.maludb_project_unarchive(bigint)
 DROP SCHEMA sme_b CASCADE;
 DO $body$
 DECLARE

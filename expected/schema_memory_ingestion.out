@@ -75,7 +75,7 @@ SET search_path TO smi, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-75
+81
 (1 row)
 INSERT INTO maludb_raw_ingest(source_type, source_name, payload_jsonb)
 VALUES ('prompt_session', 'codex', '{"prompt":"p","response":"r"}')
@@ -187,7 +187,7 @@ unapplied_count_after_cross_owner_extraction
 RESET ROLE;
 SET search_path TO maludb_core, public;
 DROP SCHEMA smi CASCADE;
-NOTICE:  drop cascades to 74 other objects
+NOTICE:  drop cascades to 80 other objects
 DETAIL:  drop cascades to view smi.maludb_subject
 drop cascades to view smi.maludb_verb
 drop cascades to view smi.maludb_subject_verb
@@ -262,6 +262,12 @@ drop cascades to function smi.maludb_chat_messages(bigint)
 drop cascades to view smi.maludb_person
 drop cascades to view smi.maludb_subject_relationship
 drop cascades to function smi.maludb_subject_relationships(bigint,timestamp with time zone,text,text)
+drop cascades to function smi.maludb_subject_verb_link(bigint,bigint)
+drop cascades to function smi.maludb_subject_verb_unlink(bigint,bigint)
+drop cascades to function smi.maludb_svpor_relationship_delete(text,bigint,text,bigint,text)
+drop cascades to function smi.maludb_pool_remove_named_member(text,text,text)
+drop cascades to function smi.maludb_project_archive(bigint)
+drop cascades to function smi.maludb_project_unarchive(bigint)
 DROP SCHEMA smi_other CASCADE;
 DO $body$
 DECLARE

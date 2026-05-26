@@ -7,6 +7,26 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.80.0 for REST API enablement.
+Bug fixes: the six `_payload_validate_*` triggers now pin their search_path,
+so `maludb_memory`/`maludb_fact`/`maludb_claim`/`maludb_episode`/
+`maludb_source_package`/`maludb_memory_detail` are writable from any
+connection (previously failed with `validate_payload ... does not exist`
+when `maludb_core` was off the caller's search_path); and the document
+inner helpers (`_upload_document_for_schema`, `_insert_document_svpor_hints_for_schema`)
+are now granted to the memory roles, so `maludb_quick_add_note` /
+`maludb_upload_document` work for tenants. New schema-local helpers:
+`maludb_subject_verb_link` / `maludb_subject_verb_unlink` (link owns the
+namespace + embedding defaults), `maludb_svpor_relationship_delete`,
+`maludb_pool_remove_named_member`, and `maludb_project_archive` /
+`maludb_project_unarchive` (backed by a new `archived_at` on subjects,
+exposed on `maludb_subject`/`maludb_project`). New columns surface notes
+issue-state (`issue_closed_at` on `maludb_memory`), skill body
+(`markdown` on `maludb_skill`), and document body (`body_text` read column
+on `maludb_document`, from the source package). Existing schemas pick up
+the new helpers and widened views by re-running
+`maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.79.0, consolidating subject
 relationships into a single object. A relationship is now one directed,
 typed, dated row, surfaced as the `maludb_subject_relationship` facade view:

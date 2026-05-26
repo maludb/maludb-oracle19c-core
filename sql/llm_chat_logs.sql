@@ -78,7 +78,9 @@ SELECT maludb_chat_get(:chat_session_id)::jsonb ? 'chat_session' AS has_chat_ses
 
 DO $body$
 BEGIN
-    PERFORM maludb_chat_append_message(:chat_session_id, 'user', 'This should fail after close.', NULL, '{}'::jsonb);
+    PERFORM maludb_chat_append_message(
+        (SELECT chat_session_id FROM maludb_chat_session ORDER BY chat_session_id DESC LIMIT 1),
+        'user', 'This should fail after close.', NULL, '{}'::jsonb);
     RAISE EXCEPTION 'closed chat append unexpectedly succeeded';
 EXCEPTION
     WHEN object_not_in_prerequisite_state THEN
