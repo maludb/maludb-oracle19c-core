@@ -7,7 +7,7 @@ WHERE n.nspname = 'maludb_core'
   AND c.relname LIKE 'malu$%';
  catalog_tables 
 ----------------
-            139
+            146
 (1 row)
 
 SELECT count(*) AS object_types FROM malu$object_type;
@@ -73,3 +73,4 @@ WHERE listener_name = 'default';
 ---------------+-----------+-----------+-------------
  default       | 127.0.0.1 |      5329 | f
 (1 row)
+

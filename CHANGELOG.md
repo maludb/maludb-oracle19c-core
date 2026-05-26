@@ -7,6 +7,22 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.78.0 for typed, temporal subject
+relationships. A new tenant-scoped `malu$svpor_relationship_type` catalog holds
+the controlled vocabulary of relationship types (with optional inverse names),
+and `malu$svpor_subject_relationship_edge` records directed, time-bounded edges
+between subjects — e.g. "Mary was 'project manager of' Zozocal from 2025-01-01
+until 2025-12-31" — using a generated `tstzrange` and a GiST overlap-exclusion
+constraint. The existing `malu$svpor_subject_relationship` pair gains a
+`relationship_type` column that a trigger keeps in sync with the pair's
+currently-valid edge. Schema enablement adds the `maludb_relationship_type` and
+`maludb_related_subject_edge` facade views plus `maludb_relationship_type_add`,
+`maludb_related_subject_edge_add`, `maludb_related_subject_edges` (point-in-time
+reads via `p_as_of`), `maludb_related_subject_edge_close`, and
+`maludb_related_subject_edge_delete`; `maludb_related_subject` now also exposes
+`relationship_type`. Existing schemas pick up the new facades by re-running
+`maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.74.0 for PostgreSQL-style user
 onboarding. New convenience roles let operators grant access with normal role
 membership: `maludb_read` for schema-local read access, `maludb_user` for normal
