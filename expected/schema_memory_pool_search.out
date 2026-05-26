@@ -70,7 +70,7 @@ SET search_path TO smp, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-84
+75
 (1 row)
 INSERT INTO maludb_subject(subject_type, canonical_name, aliases, description)
 VALUES ('project', 'zozocal', ARRAY['zzc'], 'schema-memory pool search project')
@@ -242,7 +242,7 @@ forged_foreign_search_hits
 RESET ROLE;
 SET search_path TO maludb_core, public;
 DROP SCHEMA smp CASCADE;
-NOTICE:  drop cascades to 83 other objects
+NOTICE:  drop cascades to 74 other objects
 DETAIL:  drop cascades to view smp.maludb_subject
 drop cascades to view smp.maludb_verb
 drop cascades to view smp.maludb_subject_verb
@@ -315,17 +315,8 @@ drop cascades to function smp.maludb_chat_finalize(bigint)
 drop cascades to function smp.maludb_chat_get(bigint)
 drop cascades to function smp.maludb_chat_messages(bigint)
 drop cascades to view smp.maludb_person
-drop cascades to view smp.maludb_related_subject
-drop cascades to function smp.maludb_related_subject_add(bigint,bigint,text,jsonb)
-drop cascades to function smp.maludb_related_subjects(bigint)
-drop cascades to function smp.maludb_related_subject_delete(bigint,bigint)
-drop cascades to view smp.maludb_relationship_type
-drop cascades to function smp.maludb_relationship_type_add(text,text,text)
-drop cascades to view smp.maludb_related_subject_edge
-drop cascades to function smp.maludb_related_subject_edge_add(bigint,bigint,text,timestamp with time zone,timestamp with time zone,text,jsonb)
-drop cascades to function smp.maludb_related_subject_edges(bigint,timestamp with time zone,text,text)
-drop cascades to function smp.maludb_related_subject_edge_close(bigint,timestamp with time zone)
-drop cascades to function smp.maludb_related_subject_edge_delete(bigint)
+drop cascades to view smp.maludb_subject_relationship
+drop cascades to function smp.maludb_subject_relationships(bigint,timestamp with time zone,text,text)
 DO $body$
 DECLARE
     v_schema name := 'smp';

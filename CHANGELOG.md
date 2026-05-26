@@ -7,6 +7,21 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.79.0, consolidating subject
+relationships into a single object. A relationship is now one directed,
+typed, dated row, surfaced as the `maludb_subject_relationship` facade view:
+`relationship_type` is free text and required, and `valid_from`/`valid_to`
+carry the date range — so "Mary is 'project manager of' Zozocal from
+2025-01-01 until 2025-12-31" is a single `INSERT`, and "valid as of T" is a
+single date-range `SELECT` (or the `maludb_subject_relationships(subject,
+as_of, type, direction)` reader). The 0.78.0 split is removed: the symmetric
+`maludb_related_subject` view + table + `add`/`list`/`delete` helpers, the
+`malu$svpor_relationship_type` catalog, and the header auto-sync trigger are
+all dropped (no data migration of the symmetric pairs). Directed rows recorded
+under 0.78.0 are preserved; only the catalog foreign key is removed. Existing
+schemas pick up the consolidated facade by re-running
+`maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.78.0 for typed, temporal subject
 relationships. A new tenant-scoped `malu$svpor_relationship_type` catalog holds
 the controlled vocabulary of relationship types (with optional inverse names),
