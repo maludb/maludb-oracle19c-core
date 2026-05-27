@@ -102,6 +102,37 @@ EXCEPTION WHEN foreign_key_violation THEN
 END;
 $$;
 
+-- 1.2: svpor relationship create is idempotent + FK-validates ---------
+\echo '-- 1.2: svpor_relationship_create is idempotent (same edge id) --'
+SELECT maludb_svpor_relationship_create('subject', :mary, 'verb', :vmanage, 'related_to') AS e1 \gset
+SELECT maludb_svpor_relationship_create('subject', :mary, 'verb', :vmanage, 'related_to') AS e2 \gset
+SELECT :e1 = :e2 AS idempotent;
+SELECT count(*) AS edge_rows FROM maludb_core.malu$relationship_edge
+ WHERE owner_schema = 'api_helpers_a'
+   AND source_object_type = 'subject' AND source_object_id = :mary
+   AND target_object_type = 'verb'    AND target_object_id = :vmanage
+   AND relationship_type = 'related_to';
+
+\echo '-- 1.2: svpor_relationship_create FK-validates a dangling endpoint --'
+DO $$
+DECLARE v_verb bigint := (SELECT verb_id FROM maludb_verb WHERE canonical_name = 'manages');
+BEGIN
+    PERFORM maludb_svpor_relationship_create('subject', 999999999, 'verb', v_verb, 'related_to');
+    RAISE EXCEPTION 'dangling SVPOR endpoint was not rejected';
+EXCEPTION WHEN foreign_key_violation THEN
+    RAISE NOTICE 'OK: dangling SVPOR endpoint rejected';
+END;
+$$;
+
+-- 6: search-path-safe episode writer ---------------------------------
+\echo '-- 6: maludb_register_episode from a bare search_path --'
+SET search_path TO api_helpers_a, public;
+SELECT maludb_register_episode('meeting', 'kickoff', 'kickoff summary') AS ep \gset
+SET search_path TO api_helpers_a, maludb_core, public;
+SELECT episode_kind, title, summary
+  FROM maludb_core.malu$episode_object
+ WHERE owner_schema = 'api_helpers_a' AND episode_id = :ep;
+
 -- cleanup -------------------------------------------------------------
 RESET ROLE;
 SET search_path TO maludb_core, public;
@@ -114,6 +145,7 @@ DELETE FROM malu$vector_subject WHERE owner_schema = 'api_helpers_a';
 DELETE FROM malu$vector_verb WHERE owner_schema = 'api_helpers_a';
 DELETE FROM malu$skill_package WHERE owner_schema = 'api_helpers_a';
 DELETE FROM malu$memory WHERE owner_schema = 'api_helpers_a';
+DELETE FROM malu$episode_object WHERE owner_schema = 'api_helpers_a';
 DELETE FROM malu$document WHERE owner_schema = 'api_helpers_a';
 DELETE FROM malu$source_package WHERE owner_schema = 'api_helpers_a';
 DELETE FROM malu$svpor_verb WHERE owner_schema = 'api_helpers_a';

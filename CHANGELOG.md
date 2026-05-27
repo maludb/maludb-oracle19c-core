@@ -7,6 +7,41 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.80.2, closing the last two
+API-project requests. `register_svpor_relationship` (behind
+`maludb_svpor_relationship_create`) is now idempotent and FK-validates its
+endpoints: a repeated `(source, target, relationship_type)` link in the same
+tenant returns the existing edge id instead of inserting a duplicate, and a
+dangling subject/verb id raises `foreign_key_violation` rather than recording
+an orphan edge (the polymorphic edge table has no real FK to the SVPOR
+tables) -- so the API no longer has to dedupe or existence-check itself. A new
+schema-local `maludb_register_episode(...)` facade wraps
+`maludb_core.register_episode` so the `/v1/episodes` endpoint can drop its
+`SET LOCAL search_path`; it is SECURITY INVOKER with a pinned
+`search_path = <schema>, maludb_core, pg_temp` (not security definer), so
+episodes stay tenant-owned (`current_schema()` + RLS resolve to the caller's
+schema, exactly as the direct call does today). The
+`register_svpor_relationship` fix applies immediately; existing schemas pick
+up `maludb_register_episode` by re-running `maludb_core.enable_memory_schema()`.
+This release also hardens the 0.80.1 idempotency fix: 0.80.1 dropped
+`maludb_subject`/`maludb_memory`/`maludb_skill`/`maludb_document` unconditionally
+at the start of `enable_memory_schema`, which silently destroyed a tenant's own
+same-named view and defeated the "refuse to replace an unmanaged view" guard.
+Those four views are now dropped only when extension-managed (recorded in
+`malu$enabled_schema_object`), so re-enable stays idempotent while an unmanaged
+name collision is still refused.
+
+The extension default_version advances to 0.80.1, fixing an
+`enable_memory_schema()` idempotency regression from 0.80.0. The 0.80
+facade widened several views (`maludb_subject`/`maludb_project`/
+`maludb_person`/`maludb_stakeholder`, `maludb_memory`, `maludb_skill`,
+`maludb_document`) by re-creating them after the base builders, so a
+second enable made the base builder try to shrink an already-widened view
+and failed with `cannot drop columns from view`. enable_memory_schema now
+drops those views up front (inside its transaction) so the base builders
+recreate them cleanly and the 0.80 facade re-widens; re-enabling a schema
+is idempotent again.
+
 The extension default_version advances to 0.80.0 for REST API enablement.
 Bug fixes: the six `_payload_validate_*` triggers now pin their search_path,
 so `maludb_memory`/`maludb_fact`/`maludb_claim`/`maludb_episode`/

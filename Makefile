@@ -80,6 +80,8 @@ DATA        = sql/extension/maludb_core--0.1.0.sql \
               sql/extension/maludb_core--0.77.0--0.78.0.sql \
               sql/extension/maludb_core--0.78.0--0.79.0.sql \
               sql/extension/maludb_core--0.79.0--0.80.0.sql \
+              sql/extension/maludb_core--0.80.0--0.80.1.sql \
+              sql/extension/maludb_core--0.80.1--0.80.2.sql \
               sql/extension/maludb_core--0.74.0.sql \
               sql/extension/maludb_core--0.75.0.sql \
               sql/extension/maludb_core--0.76.0.sql \
@@ -87,7 +89,9 @@ DATA        = sql/extension/maludb_core--0.1.0.sql \
               sql/extension/maludb_core--0.77.0.sql \
               sql/extension/maludb_core--0.78.0.sql \
               sql/extension/maludb_core--0.79.0.sql \
-              sql/extension/maludb_core--0.80.0.sql
+              sql/extension/maludb_core--0.80.0.sql \
+              sql/extension/maludb_core--0.80.1.sql \
+              sql/extension/maludb_core--0.80.2.sql
 MODULE_big  = maludb_core
 OBJS        = src/maludb_core.o src/maludb_vector.o src/maludb_search.o src/maludb_type.o src/maludb_topk.o src/maludb_ann.o src/maludb_atomic.o src/maludb_auth.o src/maludb_secret.o
 SHLIB_LINK  = -lcrypto -lcurl
