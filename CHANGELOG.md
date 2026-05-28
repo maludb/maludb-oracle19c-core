@@ -7,6 +7,62 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.82.0, enriching episodes
+(events) so subjects, verbs, artifacts, and decisions can all be linked
+to an event, and making that linkage agent-ready (an LLM extractor can
+stage derived graph fragments as `suggested` for review, exactly the way
+provided data flows).
+
+Investigation established that the data model could *almost* express this
+already (`malu$relationship_edge` endpoints include `subject`/`verb`/
+`episode_object`), but the friendly `register_svpor_relationship` facade
+is hard-restricted to subject<->verb endpoints, the edge's
+`relationship_type` is a controlled vocabulary, `malu$claim`/`malu$fact`
+carry SVPOR as denormalised text (not entity FKs), and episodes had only
+a write facade (`maludb_register_episode`) -- no read/list/update path.
+
+New in 0.82.0:
+
+- `malu$svpor_statement` -- a normalised, fully polymorphic
+  subject-verb-object assertion: `(subject_kind, subject_id)
+  --verb_id--> (object_kind, object_id)`, with optional predicate,
+  `valid_from`/`valid_to` dating, `confidence`, optional
+  `source_package_id` provenance link, and a `provenance` state
+  (`provided | suggested | accepted | rejected`). Both ends are
+  polymorphic over the SVPOR + governed-object graph and reference
+  `document` directly (not just `source_package`). The verb is always a
+  `malu$svpor_verb`, sidestepping the `relationship_type` vocabulary.
+  The writer (`register_svpor_statement`) is idempotent on
+  `(subject, verb, object)` and FK-validates the verb plus both
+  endpoints per kind. Schema-local facades: `maludb_svpor_statement`
+  (writable view) and `maludb_svpor_statement_create / _close /
+  _delete / _set_provenance`.
+- `malu$episode_object.provenance` -- so a derived event lands as
+  `suggested` for review. `maludb_register_episode` gains an optional
+  8th argument `p_provenance text DEFAULT 'provided'`.
+- Episode read/list/update surface: `maludb_episode` (writable view) and
+  `maludb_episode_get(episode_id)`, an aggregate returning the event plus
+  its attendees, attached documents, and decisions (every statement whose
+  subject or object is the episode) in one JSON payload, mirroring
+  `document_get`.
+- `malu$episode_type` -- a per-schema advisory event-type picker (the
+  0.81.0 `document_type` pattern), seeded with Meeting, Daily Standup,
+  Review, Retrospective, 1:1, Incident, Planning. `episode_kind` stays
+  free text; nothing is FK-enforced.
+- Starter verbs seeded per schema: `attended`, `generated_by`,
+  `made_during` (with aliases).
+- `svpor_statement` registered as a `derived_object_type` in
+  `malu$derivation_ledger`, so derived statements get lineage rows.
+
+Agent-readiness note: the derivation *process* (launching the LLM,
+parsing transcripts) is **not** defined in this release -- it lives in
+the existing model gateway (`malu$model_request`/`malu$model_response`),
+the ingest pipeline (`malu$raw_ingest`/`malu$ingest_extraction`), MC2DB
+tools, and lineage (`malu$derivation_ledger`). 0.82.0 only ensures the
+data model carries the provenance/confidence/lineage an agent needs to
+write reviewable output. Existing schemas pick up the new objects by
+re-running `maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.81.0, giving documents a
 first-class type label for the UI. Documents serve two purposes in MaluDB
 -- verbatim sources for derived memories and standalone artifacts the
