@@ -133,6 +133,29 @@ SELECT episode_kind, title, summary
   FROM maludb_core.malu$episode_object
  WHERE owner_schema = 'api_helpers_a' AND episode_id = :ep;
 
+-- subject-relationship edit facades (close / set_type / delete) -------
+\echo '-- subject_relationship facades: close / set_type / delete --'
+INSERT INTO maludb_subject(subject_type, canonical_name) VALUES ('person', 'Alex')
+RETURNING subject_id AS alex \gset
+INSERT INTO maludb_subject_relationship
+    (from_subject_id, to_subject_id, relationship_type, valid_from)
+VALUES (:mary, :alex, 'manager of', TIMESTAMPTZ '2026-01-01')
+RETURNING relationship_id AS rel \gset
+
+-- close: set valid_to (idempotent — second call with same value is a no-op)
+SELECT maludb_subject_relationship_close(:rel, TIMESTAMPTZ '2026-05-28') AS closed_now,
+       maludb_subject_relationship_close(:rel, TIMESTAMPTZ '2026-05-28') AS already_closed;
+SELECT valid_to IS NOT NULL AS expired FROM maludb_subject_relationship WHERE relationship_id = :rel;
+
+-- set_type: edit relationship_type
+SELECT maludb_subject_relationship_set_type(:rel, 'advisor to') AS type_changed,
+       maludb_subject_relationship_set_type(:rel, 'advisor to') AS already_that_type;
+SELECT relationship_type FROM maludb_subject_relationship WHERE relationship_id = :rel;
+
+-- delete: remove a mistake
+SELECT maludb_subject_relationship_delete(:rel) AS deleted_rows,
+       maludb_subject_relationship_delete(:rel) AS delete_again;
+
 -- cleanup -------------------------------------------------------------
 RESET ROLE;
 SET search_path TO maludb_core, public;

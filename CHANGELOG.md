@@ -7,6 +7,26 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.80.3, adding search-path-safe
+schema-local facades for editing an existing typed, dated subject<->subject
+relationship: `maludb_subject_relationship_close(p_relationship_id, p_valid_to
+DEFAULT now())` (expire now or at a chosen date),
+`maludb_subject_relationship_delete(p_relationship_id)` (for relationships
+entered by mistake), and `maludb_subject_relationship_set_type(p_relationship_id,
+p_relationship_type)` (edit the type). All three are SECURITY INVOKER with a
+pinned `search_path = <schema>, maludb_core, pg_temp` (matching the
+`maludb_register_episode` and `maludb_svpor_relationship_create` pattern), so
+the API can call them without `SET LOCAL search_path` while writes stay
+tenant-owned (`current_schema()` + RLS). The writable `maludb_subject_relationship`
+view continues to work too -- these facades are a parallel API path, not a
+replacement. The facades write directly to
+`maludb_core.malu$svpor_subject_relationship_edge` (executor already has CRUD;
+RLS scopes by `owner_schema = current_schema()`) rather than wrapping a
+separate core helper -- the 0.79.0 consolidation deliberately dropped the
+`close`/`delete`/`list`/`add_svpor_relationship_edge` helpers in favor of the
+view, and resurrecting them would fight that decision. Existing schemas pick
+up the facades by re-running `maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.80.2, closing the last two
 API-project requests. `register_svpor_relationship` (behind
 `maludb_svpor_relationship_create`) is now idempotent and FK-validates its
