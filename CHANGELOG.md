@@ -7,6 +7,49 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.81.0, giving documents a
+first-class type label for the UI. Documents serve two purposes in MaluDB
+-- verbatim sources for derived memories and standalone artifacts the
+user can browse and cite via page-index/chat-index -- and the second
+purpose needs a short label per document ("Meeting Transcript", "Change
+Request", "White Paper") that the UI can display and filter on.
+
+The new pieces:
+
+- `malu$document.document_type text` (nullable, no FK, no CHECK). A
+  tag-style attribute, not an enforced enum. One primary type per
+  document, drives the UI label.
+- `malu$document_type` per-schema lookup table that holds the "common
+  document types" each tenant wants to expose in the picker. Advisory
+  only: nothing prevents `upload_document` from writing a brand-new
+  type string that is not yet seeded. Uniqueness is case-insensitive
+  on `lower(document_type)` so "Transcript" and "transcript" share a
+  slot. RLS-scoped to `owner_schema = current_schema()` like the other
+  tenant tables.
+- `'document_type'` added to the `malu$document_tag.tag_kind` CHECK
+  list so secondary type tags can accumulate alongside the primary
+  column without abusing `'freeform'`.
+- `upload_document(...)` / schema-local `maludb_upload_document(...)`
+  gain an 11th argument `p_document_type text DEFAULT NULL`, appended
+  at the end so existing 10-arg positional callers (REST/CLI/SDK) keep
+  binding to the same function through the new default.
+- A new schema-local writable `maludb_document_type` view so each
+  tenant manages its own picker list via INSERT/UPDATE/DELETE.
+- The widened `maludb_document` view gets `document_type` appended at
+  the end of its column list. CREATE OR REPLACE VIEW tolerates the
+  append, so re-enable does not need to drop the view first.
+
+A new `_enable_memory_schema_0810_facade(p_schema)` builder creates the
+`maludb_document_type` facade view, seeds a starter list of common
+types (Meeting Notes, Meeting Transcript, Email, Report, White Paper,
+Specification, Change Request, Decision Memo, Proposal, Contract) via
+`INSERT ... ON CONFLICT DO NOTHING` (idempotent on re-enable; tenant
+edits and deletes survive subsequent enables), re-issues the widened
+`maludb_document` view with `document_type` appended, and replaces the
+10-arg `maludb_upload_document` with the new 11-arg version. Existing
+schemas pick up the new objects by re-running
+`maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.80.3, adding search-path-safe
 schema-local facades for editing an existing typed, dated subject<->subject
 relationship: `maludb_subject_relationship_close(p_relationship_id, p_valid_to
