@@ -7,6 +7,38 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.85.0, adding a developer
+tool that scaffolds a join VIEW linking a MaluDB object to a record in an
+external relational table via the object's 0.84.0 reference attribute --
+so an application can `SELECT` a subject (or any object) alongside the
+live columns of, e.g., an `hr.persons` row, without duplicating fields.
+
+- `maludb_reference_view_sql(p_view_name, p_target_kind, p_attr_name,
+  p_external_table, p_external_key, p_external_key_cast default 'text',
+  p_join default 'left', p_accepted_only default false,
+  p_object_columns default null, p_external_columns default null)
+  RETURNS text` -- returns the `CREATE VIEW` DDL for review.
+- `maludb_create_reference_view(... , p_replace default false)` --
+  builds and executes it in the caller's schema.
+
+Both are `SECURITY INVOKER` and create in `current_schema()`, so the
+generated view and its access to the external table use the caller's own
+privileges (no escalation); all identifiers are quoted. The view is
+generated against the `maludb_core` base tables with an
+`owner_schema = current_schema()` predicate (not the `maludb_*` facade
+views), so re-running `enable_memory_schema` does not drop it. It is
+generic over `target_kind` (subject / episode_object / document / ...; a
+project is a subject), LEFT-joins both the reference attribute and the
+external table by default (all objects, NULL external columns when
+unlinked; pass `p_join => 'inner'` for linked-only), and casts the text
+`ref_key` to the external key type (`p_external_key_cast`) so an index on
+the external key can be used. Same-database only: a SQL view can join the
+external table when it is in the same cluster (another schema, or a
+foreign table via FDW); REST/other systems are resolved app-side.
+
+Existing schemas pick up the facades by re-running
+`maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.84.0, adding front-end
 ergonomics for the attribute model plus external-record reference
 attributes.
