@@ -7,6 +7,44 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.84.0, adding front-end
+ergonomics for the attribute model plus external-record reference
+attributes.
+
+- **Bundled reads.** `maludb_object_get(target_kind, target_id) RETURNS
+  jsonb` returns any object together with its attributes (and, for
+  episodes, its statements + detail steps) in one payload:
+  `{kind, id, object, attributes, …}`. Opt-in views
+  `maludb_episode_with_attributes` / `maludb_subject_with_attributes` /
+  `maludb_document_with_attributes` add an `attributes` jsonb column to
+  the base facade so a filtered list query returns each object with its
+  attributes inline. `maludb_attributes(kind, id)` exposes the bundler
+  directly. (Opt-in views keep plain list queries cheap.)
+- **Single-POST writes.** `maludb_attributes_apply(target_kind,
+  target_id, p_attributes jsonb) RETURNS integer` bulk-upserts an array
+  of attributes, so an API POST handler can `register_<obj>(…)` + apply
+  all attributes in one transaction — atomic object-plus-attributes
+  insert.
+- **External references.** An attribute can point at a record in an
+  external relational table instead of duplicating its fields:
+  `malu$svpor_attribute` gains `ref_source` / `ref_entity` / `ref_key`
+  (advisory — no FK; the target may live in another schema, database, or
+  system), indexed `(owner_schema, ref_source, ref_entity, ref_key)` for
+  reverse lookup ("which node is external record X?"), and
+  `malu$attribute_template.value_type` gains `'reference'`.
+  `register_svpor_attribute` / `maludb_svpor_attribute_create` gain
+  trailing `p_ref_source` / `p_ref_entity` / `p_ref_key` args, and the
+  `maludb_svpor_attribute` view exposes the new columns. Pointer-only by
+  design: MaluDB stores the typed link (with a cached label in
+  `value_text`); the app owns how to fetch and deep-link each source.
+  `provenance` + `confidence` carry over, so an LLM-proposed match lands
+  as `suggested` for human confirmation. Example: an `svpor_subject`
+  carries `hr_person` → `(hr, persons, emp_123)` instead of copying the
+  HR person row.
+
+Existing schemas pick up the new objects by re-running
+`maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.83.0, adding typed, optional
 **attributes** on any node or edge, plus an advisory per-type **template
 catalog** so application developers (and agents) can build entry forms.
