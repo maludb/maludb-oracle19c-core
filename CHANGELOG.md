@@ -7,6 +7,45 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.86.0, adding two coupled
+rails that share one contract -- the `(object_kind, object_id)` handle --
+so an application can enter the memory graph from a relational record, a
+text search, or a vector search, and traverse all related objects.
+
+**Unified graph traversal.** The episode/PM relationships live in
+`malu$svpor_statement` (verb-typed SVO edges) while lineage lives in
+`malu$relationship_edge`; the existing `graph_*` functions only walked the
+latter. This release adds `malu$edge_unified` -- a normalized view over
+BOTH stores `(edge_store, source_kind, source_id, rel, target_kind,
+target_id, confidence, provenance)` -- and traversal over it:
+- `maludb_graph_neighbors(kind, id, direction default 'both', rel_filter)`
+  -- one hop, both stores, with a resolved `label` per neighbor.
+- `maludb_graph_walk(kind, id, max_depth default 4, direction default
+  'both', rel_filter)` -- multi-hop, depth-bounded, cycle-safe, returning
+  `(object_kind, object_id, depth, rel, edge_store, label, path)`. A
+  single walk from a sprint reaches its meetings, developers, documents,
+  and decisions to any depth, regardless of edge store or direction.
+- `maludb_edge` -- the unified edge view, directly queryable/filterable.
+
+**Semantic entry.** A vector hit becomes a graph entry point by resolving
+to an `(object_kind, object_id)`:
+- `malu$object_embedding` -- an embedding per graph object, keyed by
+  `(object_kind, object_id, embedding_space, source_field, sub_key)` so a
+  subject's markdown, an episode's title+summary, and many chunks of a
+  document can all be indexed. `maludb_object_embedding` (writable view) +
+  `maludb_register_object_embedding(...)` upsert.
+- `maludb_semantic_search(query_embedding, object_kinds, k,
+  embedding_space, metric)` -- similarity scan returning
+  `(object_kind, object_id, source_field, sub_key, score, label)`. Then
+  "vector hit -> traverse" is `semantic_search(...) -> graph_walk(...)`.
+
+Consistent with the rest of MaluDB, the database does not compute
+embeddings: callers/the embedding pipeline supply precomputed vectors
+(raw-float `bytea`, binary-compatible with the `malu_vector` type used by
+the distance primitives); this layer stores them, scans, and returns
+object handles. Existing schemas pick up the new objects by re-running
+`maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.85.0, adding a developer
 tool that scaffolds a join VIEW linking a MaluDB object to a record in an
 external relational table via the object's 0.84.0 reference attribute --
