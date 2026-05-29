@@ -7,6 +7,58 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.83.0, adding typed, optional
+**attributes** on any node or edge, plus an advisory per-type **template
+catalog** so application developers (and agents) can build entry forms.
+Motivated by project-management data: a Task spanning months, Sprints
+spanning weeks, Meetings, and steps -- each carrying planned/actual date
+ranges, % complete, story points, priority, etc. -- without a column per
+property.
+
+Modeling decision: a date like "Planned Start Date" is neither a subject
+nor a verb (subjects are entities, verbs are relationships, dates are
+scalar *properties*), so properties are typed attributes attached to
+nodes/edges -- a property graph -- not new SVPOR vocabulary and not new
+columns. The hierarchy (Task -> Sprint -> Meeting -> steps) stays modeled
+as separate episodes linked by `part_of` statements, with each level's
+own dates; steps can be `memory_detail_object`s.
+
+New in 0.83.0:
+
+- `malu$svpor_attribute` -- the value store. Polymorphic over nodes
+  **and** edges (`target_kind` includes `svpor_statement`). Typed value
+  columns (`value_timestamp` / `value_range tstzrange` / `value_numeric`
+  / `value_text` / `value_jsonb`) so dates stay queryable (GiST index on
+  `value_range`), plus `provenance` + `confidence` so an LLM extractor
+  can stage `suggested` values for review. One value per
+  `(target, attr_name)` -- `register_svpor_attribute` upserts. Facades:
+  `maludb_svpor_attribute` (writable view) +
+  `maludb_svpor_attribute_create / _delete / _set_provenance`.
+- `malu$attribute_template` -- an advisory catalog keyed by
+  `(applies_to, type_value)`, where `applies_to` is one of
+  `episode_type` / `document_type` / `subject_type` / `verb`. Lists the
+  attributes for a type with a `requirement` of `required` /
+  `recommended` / `optional`, plus `value_type`, `label`, `unit`,
+  `allowed_values`, `default_value`, `display_order` -- the form
+  definition. `verb` lets edge attributes be templated too. Facades:
+  `maludb_attribute_template` (writable view) +
+  `maludb_attribute_template_create / _delete`.
+- `attribute_check(target_kind, target_id) RETURNS jsonb` -- resolves the
+  target's type, compares its stored attributes against the matching
+  template, and returns `missing_required` plus a `fields` list with a
+  `present` flag. **Advisory**: the DB never rejects an incomplete node
+  (consistent with every other picker); the API/agent decides whether to
+  block on submit. Facade: `maludb_attribute_check`.
+- Seeds: episode types `Project`, `Task`, `Sprint` added to the picker,
+  and starter templates -- Sprint (`planned_start_date` + `planned_end_date`
+  required, `estimated_story_points` optional), Task (planned dates
+  required, `percent_complete` + `priority`), Meeting (`duration_minutes`).
+
+The catalog the API builds on -- "list attributes for all node types and
+all relationship types" -- is just `maludb_attribute_template`. Existing
+schemas pick up the new objects by re-running
+`maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.82.0, enriching episodes
 (events) so subjects, verbs, artifacts, and decisions can all be linked
 to an event, and making that linkage agent-ready (an LLM extractor can
