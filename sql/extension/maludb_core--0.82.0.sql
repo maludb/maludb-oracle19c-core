@@ -39907,3 +39907,100 @@ $body$;
 REVOKE ALL ON FUNCTION maludb_core.enable_memory_schema(name) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION maludb_core.enable_memory_schema(name)
     TO maludb_memory_admin, maludb_memory_executor, maludb_user, maludb_admin;
+
+-- ===== 8. fix: register_svpor_* empty-aggregate NULL bug =============
+-- The upsert path merged aliases (and verb search_phrases) with
+-- array_agg(DISTINCT ...). When both the existing and incoming arrays are
+-- empty, array_agg over zero rows returns NULL, which violates the NOT
+-- NULL on those columns -- so the SECOND registration of an alias-less
+-- subject/verb/predicate failed. Wrap the merge in COALESCE(..., '{}').
+-- These are CREATE OR REPLACE of the existing core registrars (signatures
+-- and bodies unchanged except the COALESCE), so grants are preserved.
+
+CREATE OR REPLACE FUNCTION maludb_core.register_svpor_subject(
+    p_canonical_name text,
+    p_aliases        text[] DEFAULT ARRAY[]::text[],
+    p_description    text   DEFAULT NULL,
+    p_subject_type   text   DEFAULT 'other',
+    p_classifier_md  text   DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql
+AS $body$
+DECLARE
+    v_id bigint;
+    v_subject_type text := maludb_core._normalize_svpor_subject_type(p_subject_type);
+BEGIN
+    INSERT INTO maludb_core.malu$svpor_subject (canonical_name, aliases, description, subject_type, classifier_md)
+    VALUES (p_canonical_name, COALESCE(p_aliases, ARRAY[]::text[]), p_description, v_subject_type, p_classifier_md)
+    ON CONFLICT (owner_schema, canonical_name) DO UPDATE
+        SET aliases = COALESCE((
+                SELECT array_agg(DISTINCT a)
+                FROM unnest(malu$svpor_subject.aliases || COALESCE(EXCLUDED.aliases, ARRAY[]::text[])) AS a
+            ), ARRAY[]::text[]),
+            description = COALESCE(EXCLUDED.description, malu$svpor_subject.description),
+            subject_type = EXCLUDED.subject_type,
+            classifier_md = COALESCE(EXCLUDED.classifier_md, malu$svpor_subject.classifier_md)
+    RETURNING subject_id INTO v_id;
+    RETURN v_id;
+END;
+$body$;
+
+CREATE OR REPLACE FUNCTION maludb_core.register_svpor_verb(
+    p_canonical_name text,
+    p_aliases text[] DEFAULT ARRAY[]::text[],
+    p_description text DEFAULT NULL,
+    p_verb_type text DEFAULT NULL,
+    p_search_phrases text[] DEFAULT ARRAY[]::text[],
+    p_classifier_md text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql
+AS $body$
+DECLARE
+    v_id bigint;
+    v_verb_type text := maludb_core._normalize_svpor_verb_type(p_verb_type, p_canonical_name);
+BEGIN
+    INSERT INTO maludb_core.malu$svpor_verb (canonical_name, aliases, description, verb_type, search_phrases, classifier_md)
+    VALUES (
+        p_canonical_name,
+        COALESCE(p_aliases, ARRAY[]::text[]),
+        p_description,
+        v_verb_type,
+        COALESCE(p_search_phrases, ARRAY[]::text[]),
+        p_classifier_md
+    )
+    ON CONFLICT (owner_schema, canonical_name) DO UPDATE
+        SET aliases = COALESCE((
+                SELECT array_agg(DISTINCT a)
+                FROM unnest(malu$svpor_verb.aliases || COALESCE(EXCLUDED.aliases, ARRAY[]::text[])) AS a
+            ), ARRAY[]::text[]),
+            search_phrases = COALESCE((
+                SELECT array_agg(DISTINCT p)
+                FROM unnest(malu$svpor_verb.search_phrases || COALESCE(EXCLUDED.search_phrases, ARRAY[]::text[])) AS p
+            ), ARRAY[]::text[]),
+            description = COALESCE(EXCLUDED.description, malu$svpor_verb.description),
+            verb_type = EXCLUDED.verb_type,
+            classifier_md = COALESCE(EXCLUDED.classifier_md, malu$svpor_verb.classifier_md)
+    RETURNING verb_id INTO v_id;
+    RETURN v_id;
+END;
+$body$;
+
+CREATE OR REPLACE FUNCTION maludb_core.register_svpor_predicate(
+    p_canonical_name text,
+    p_aliases        text[] DEFAULT ARRAY[]::text[],
+    p_description    text   DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql
+AS $body$
+DECLARE v_id bigint;
+BEGIN
+    INSERT INTO maludb_core.malu$svpor_predicate (canonical_name, aliases, description)
+    VALUES (p_canonical_name, COALESCE(p_aliases, ARRAY[]::text[]), p_description)
+    ON CONFLICT (owner_schema, canonical_name) DO UPDATE
+        SET aliases     = COALESCE((SELECT array_agg(DISTINCT a)
+                           FROM unnest(malu$svpor_predicate.aliases || COALESCE(EXCLUDED.aliases, ARRAY[]::text[])) AS a), ARRAY[]::text[]),
+            description = COALESCE(EXCLUDED.description, malu$svpor_predicate.description)
+    RETURNING predicate_id INTO v_id;
+    RETURN v_id;
+END;
+$body$;

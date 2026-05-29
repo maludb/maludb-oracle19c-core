@@ -54,6 +54,15 @@ New in 0.82.0:
 - `svpor_statement` registered as a `derived_object_type` in
   `malu$derivation_ledger`, so derived statements get lineage rows.
 
+Also fixes a pre-existing bug in `register_svpor_subject` /
+`register_svpor_verb` / `register_svpor_predicate`: their upsert merged
+`aliases` (and verb `search_phrases`) with `array_agg(DISTINCT ...)`,
+which returns NULL over an empty set, so the *second* registration of an
+alias-less subject/verb/predicate failed the `NOT NULL` constraint. The
+merge is now wrapped in `COALESCE(..., ARRAY[]::text[])`. Existing schemas
+pick up the corrected registrars on `ALTER EXTENSION ... UPDATE TO
+'0.82.0'`.
+
 Agent-readiness note: the derivation *process* (launching the LLM,
 parsing transcripts) is **not** defined in this release -- it lives in
 the existing model gateway (`malu$model_request`/`malu$model_response`),
