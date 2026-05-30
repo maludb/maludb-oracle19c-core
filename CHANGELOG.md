@@ -7,6 +7,19 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.86.1, fixing a re-enable
+idempotency regression introduced in 0.86.0. The 0830 facade creates
+`maludb_svpor_attribute` (16 columns) and the 0840 facade widens it with
+`ref_source`/`ref_entity`/`ref_key` (19 columns); on a *first*
+`enable_memory_schema()` that is fine (create then widen), but a
+*re-enable* ran the 0830 builder first and tried to `CREATE OR REPLACE`
+the already-widened view back to 16 columns, which Postgres rejects with
+"cannot drop columns from view". `maludb_svpor_attribute` is now in
+`enable_memory_schema`'s up-front CASCADE drop list (the same mechanism
+the 0.80.1 fix uses for the other facade-widened views), so the builders
+recreate it cleanly and re-enable is idempotent again. No new objects;
+this release only replaces `enable_memory_schema`.
+
 The extension default_version advances to 0.86.0, adding two coupled
 rails that share one contract -- the `(object_kind, object_id)` handle --
 so an application can enter the memory graph from a relational record, a
