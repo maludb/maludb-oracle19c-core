@@ -7,6 +7,53 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.88.0, adding
+subject/verb-compartmentalized memory search by binding the embedding rail
+to the canonical SVPOR graph. maludb_core already had the three pieces of a
+"compartmentalize the vector search by subject+verb" design but as
+disconnected islands: the canonical SVO graph (`malu$svpor_subject/_verb/
+_statement` + the typed edge-attribute store `malu$svpor_attribute`),
+compartmentalized chunk vectors (`malu$vector_compartment` keyed
+`(owner_schema, namespace, subject_id, verb_id)` + `malu$vector_chunk`,
+searched by `vector_search_by_tags`), and object embeddings
+(`malu$object_embedding` + `semantic_search`). The load-bearing gap: the
+compartment's `subject_id`/`verb_id` pointed at a separate text registry
+(`malu$vector_subject`/`_verb`) with no link to the graph, and a chunk had
+no pointer back to its edge or document.
+
+0.88.0 binds them and adds the ingest+search spine. Decisions locked in
+`embedding-handoff-analysis.md`: extraction stays external (a strong cloud
+model first) so the DB exposes a *contract*, not an orchestrator; the
+canonical verb is the edge + compartment key while status/timing are
+predicate *edge attributes* (verb `upgrade`, not `performed_upgrade`); embed
+the *per-edge span* (N edges in a chunk → N compartment placements);
+`document_id` is a soft reference while `statement_id` keeps its FK; fuzzy
+candidate resolution is deferred (Tier 2) since a strong model emits
+near-canonical surface forms, so exact + alias resolution suffices here.
+
+- New nullable links: `malu$vector_subject.svpor_subject_id` and
+  `malu$vector_verb.svpor_verb_id` (FK → the graph vocab), and
+  `malu$vector_chunk.statement_id` (FK → `malu$svpor_statement`) +
+  `document_id` (soft ref), with supporting indexes. All backward
+  compatible; existing rows keep NULL links.
+- `_vector_compartment_for_svpor(...)` maps graph `(subject_id, verb_id)` to
+  a compartment, deriving the routing tags from the canonical name and
+  recording the graph link on the routing rows (keeps the graph the single
+  source of truth, no drift).
+- `_memory_ingest_edge_for_schema(...)` / facade `maludb_memory_ingest_edge`:
+  the ingestion contract — resolve (alias-aware) or create subject/verb,
+  upsert the SVO edge, apply the predicate as typed edge attributes, and
+  embed the per-edge span into the graph-aligned compartment, stamping the
+  chunk with `statement_id`/`document_id`. Idempotent on the SVO identity.
+- `_memory_search_for_schema(...)` / facade `maludb_memory_search`: a
+  subject/verb pre-filtered compartment ANN that returns `statement_id` —
+  one relational hop to `(subject_id, verb_id)`, no graph traversal on the
+  first pass.
+
+Existing schemas pick up the two new facades by re-running
+`maludb_core.enable_memory_schema()`. Global fallback to object embeddings
+and `pg_trgm` fuzzy resolution are deferred to Tier 2.
+
 The extension default_version advances to 0.87.0, making documents
 first-class participants in the unified graph. Previously,
 `maludb_upload_document(..., p_projects => ARRAY['MIST'])` recorded the
