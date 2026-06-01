@@ -7,6 +7,41 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.87.0, making documents
+first-class participants in the unified graph. Previously,
+`maludb_upload_document(..., p_projects => ARRAY['MIST'])` recorded the
+project relationship only as a soft text tag in `malu$document_tag`
+(`tag_kind='project'`, `tag_value='MIST'` -- a string, not a subject id):
+`malu$document.primary_project_id` stayed NULL, no `svpor_statement` edge
+was created, and the document was invisible to `maludb_graph_walk` /
+`maludb_graph_neighbors` / `maludb_edge`. You could traverse from a
+project to its people/sprints/tasks/meetings, but not to its documents.
+
+0.87.0 resolves project/subject tags to subjects (creating the subject if
+absent), records the resolved id on the tag (`tag_object_id`), sets
+`primary_project_id` from the first project, and creates a real
+`svpor_statement` edge `document --verb--> subject` (`project => concerns`,
+`subject => mentions`, `stakeholder => involves`). Because `document` is
+already a valid `svpor_statement` endpoint and `malu$edge_unified` already
+surfaces `svpor_statement`, the document becomes reachable by the existing
+traversal with no edge-view change -- it joins the graph the same way an
+episode or person does. The soft tags are kept (now carrying
+`tag_object_id`), so the tag UI and provenance flow are unchanged.
+
+- `_document_graph_link(...)` resolves one tag to a subject + edge
+  (SECURITY DEFINER, writes with explicit `owner_schema`; idempotent:
+  subject resolved by name, edge `ON CONFLICT DO NOTHING`).
+- `_upload_document_for_schema` now links project/subject tags on upload
+  and sets `primary_project_id` (signature unchanged).
+- `maludb_document_graph_backfill()` connects already-uploaded documents
+  in the current schema (resolve tags, set FKs, create edges); idempotent,
+  safe to re-run. Verbs `concerns`/`mentions`/`involves` are seeded per
+  schema.
+
+Existing schemas pick up the new objects by re-running
+`maludb_core.enable_memory_schema()`, then run
+`maludb_document_graph_backfill()` once to connect pre-0.87 documents.
+
 The extension default_version advances to 0.86.1, fixing a re-enable
 idempotency regression introduced in 0.86.0. The 0830 facade creates
 `maludb_svpor_attribute` (16 columns) and the 0840 facade widens it with
