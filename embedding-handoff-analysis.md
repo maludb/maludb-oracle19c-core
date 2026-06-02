@@ -737,4 +737,41 @@ Still **deferred to Tier 2** (unchanged): `pg_trgm` fuzzy/candidate resolution,
 global fallback to object embeddings, chunk dedup, date-contradiction checks,
 subject hierarchy / verb-family search breadth.
 
+## Status — 0.89.0: model gateway wired into extraction (verified live 2026-06-01)
+
+The extraction step now goes through MaluDB's in-DB model gateway ("Option B").
+Because PostgreSQL can't make an outbound API call inside a SQL function, the
+wiring is **async / daemon-mediated**: `set config → request (enqueue) →
+[daemon calls the model] → harvest`.
+
+Shipped in `sql/extension/maludb_core--0.88.0--0.89.0.sql`:
+- `malu$memory_extraction_config` (per-schema/namespace binding: extraction
+  model alias + prompt template + embedding model + defaults) with
+  `maludb_memory_set_model_config()` / `maludb_memory_model_config()` (the
+  resolver exposes `secret_ref` + `base_url`, **never the secret value**).
+- `malu$memory_extraction` (the pending-extraction queue) +
+  `maludb_memory_request_extraction()` (render prompt → enqueue a
+  `malu$model_request` against the bound alias, **explicit `owner_schema`** —
+  the gateway is per-tenant: `malu$model_alias/_request/_response` are
+  `owner_schema`-scoped with composite FKs) +
+  `maludb_memory_harvest_extractions()` (parse the daemon's
+  `{"candidate_edges":[…]}` response → `_memory_ingest_edge_for_schema` per
+  edge, including the per-edge embedding).
+- Gateway correctness fix: `submit_request` now hashes
+  `convert_to(prompt,'UTF8')` instead of `prompt::bytea` (the latter throws on
+  any backslash in the prompt).
+
+**Verified** (deltas 0.82.0→0.89.0 on PG17; `examples/mist-e2e/04-extraction.sql`):
+config bind + resolve → enqueue (pending row tied to the model request) →
+simulated daemon response → harvest produced **2 edges** with typed predicate
+attributes, and the compartment search returned each edge in its own
+compartment (isolation held); re-harvest is a no-op. 0.88.0's `03-embedding.sql`
+still passes (no regression).
+
+**Daemon dependency:** no extraction daemon ships in this repo — the contract is
+the `candidate_edges` response JSON; a `maludb_modeld`-style worker (or
+pageindexd's `model_gateway.py` pattern) must drain `malu$model_request` and
+write `malu$model_response`. Per-edge **embeddings ride in that response JSON**
+(the DB still never generates embeddings).
+
 
