@@ -7,6 +7,35 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.91.0, making the in-database
+model gateway **per-tenant and zero-admin self-service**. Previously
+`malu$model_alias` was already per-tenant but `malu$model_provider` was
+global, and `register_model_provider`/`register_model_alias` were
+`SECURITY INVOKER` gated by the broad, cross-tenant `maludb_llm_model_admin`
+RLS policy — so a tenant role could not register its own provider/alias
+without an admin granting it global gateway-admin rights.
+
+- Finishes the per-tenant migration for `malu$model_provider` (adds
+  `owner_schema`, drops the global `provider_name` unique, adds
+  `UNIQUE(owner_schema, provider_name)`), mirroring the alias migration done
+  in 0.89. `register_model_alias` now resolves its provider within the
+  caller's schema (falling back to the shared `maludb_core` namespace).
+- `enable_memory_schema` now exposes schema-local
+  `maludb_register_model_provider` / `maludb_register_model_alias` facades and
+  `maludb_model_provider` / `maludb_model_alias` read views. The facades are
+  `SECURITY DEFINER` (so they pass the admin-only RLS gate as the extension
+  owner) but **hard-scoped to `owner_schema` = the enabling schema** (baked at
+  enablement, never caller-supplied): a tenant can only ever see or write its
+  OWN provider/alias rows. No broad `maludb_llm_model_admin` grant, and **no
+  secret decryption** — `secret_ref` is stored, never resolved here (the token
+  stays app-side). Granted to the tenant's existing `maludb_memory_executor` /
+  `admin` roles, so any newly enabled schema/role self-serves model config
+  with zero admin involvement.
+
+Existing schemas pick up the facades by re-running
+`maludb_core.enable_memory_schema()`. Acceptance test
+`examples/mist-e2e/06-self-serve-gateway.sql`.
+
 The extension default_version advances to 0.90.0, adding a focused pair of
 helpers for a **two-way binding between a relational record and a MaluDB
 graph object** (e.g. a `projects` row ↔ a `subject` of type `project`, or a
