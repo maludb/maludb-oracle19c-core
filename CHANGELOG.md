@@ -7,6 +7,35 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.92.0, adding **one-call memory
+ingestion from an extraction JSON object**. The project does not run any LLM;
+an external extractor produces a single JSON object (the contract in
+`docs/memory-extraction-json-contract.md`) and this release materializes all
+of its memory structures in one call:
+
+- `maludb_memory_ingest_extraction(p_extraction jsonb, p_source_kind, p_source_id,
+  p_provenance) → jsonb` (per-tenant facade) creates **subjects** (+ node
+  attributes + external `ref` pointers), **verbs**, **episodes** (all kinds, +
+  episode attributes), **edges** (verb-typed SVO statements + edge attributes),
+  and **subject↔subject relationships** — plus optionally the source document
+  (an inline `document` block). It returns a report (`created`/`resolved`
+  counts, the `key → id` map, and a `skipped` list).
+- Backing `_memory_ingest_extraction_for_schema` + `_memory_apply_attributes_for_schema`
+  are `SECURITY DEFINER` with explicit `owner_schema` throughout.
+
+Decisions locked with the requirements: names are **trusted** (resolve by exact
+canonical name/alias, create only if absent — no fuzzy matching, no review);
+provenance defaults to **`accepted`**; episodes **dedup on
+`(kind, title, occurred_at)`**; bad items are **skipped** (per-item
+subtransactions) and recorded; **embeddings are deferred** to a separate worker
+(each edge keeps its `source_span`); hints are not a DB concept (the extractor
+bakes them into explicit subjects/edges). Claims/facts are a planned
+fast-follow, not in this release.
+
+Existing schemas pick up the facade by re-running
+`maludb_core.enable_memory_schema()`. Acceptance test
+`examples/mist-e2e/07-extraction-json.sql`.
+
 The extension default_version advances to 0.91.0, making the in-database
 model gateway **per-tenant and zero-admin self-service**. Previously
 `malu$model_alias` was already per-tenant but `malu$model_provider` was
