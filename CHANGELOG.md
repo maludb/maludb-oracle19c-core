@@ -7,6 +7,48 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.89.0, wiring the in-database
+model gateway into the memory-extraction path so MaluDB owns model selection
+and brokering ("Option B"). PostgreSQL can't make an outbound model/API call
+inside a SQL function, so this is asynchronous and daemon-mediated, mirroring
+the existing `submit_request` / `malu$model_response` lifecycle:
+`set config → request (enqueue) → [daemon calls the model] → harvest`.
+
+Two layers ship:
+
+- **Config layer** (per-schema/namespace, readable by a worker):
+  `malu$memory_extraction_config` binds which model alias extracts, the
+  prompt template, the embedding model, and default subject_type /
+  provenance / generation_params. `maludb_memory_set_model_config(...)`
+  upserts it; `maludb_memory_model_config(...)` returns the resolved binding
+  (alias → provider_kind, `secret_ref`, `base_url` from the alias
+  `runtime_params`, embedding model). The resolver exposes the **secret_ref
+  pointer only, never the secret value**.
+- **Async pipeline:** `maludb_memory_request_extraction(source, chunk)`
+  renders the bound prompt and `submit_request()`s it through the bound alias
+  (using its registered provider/secret/host), recording a pending row in
+  `malu$memory_extraction`. `maludb_memory_harvest_extractions()` reads each
+  completed `malu$model_response`, parses its `{"candidate_edges":[...]}`
+  JSON, and calls the 0.88.0 `_memory_ingest_edge_for_schema` per edge (graph
+  edge + typed predicate attributes + per-edge embedding into the
+  compartment). Per-row subtransactions isolate failures.
+
+Also fixes a latent gateway bug: `submit_request` hashed the prompt with
+`p_rendered_prompt::bytea`, which fails with "invalid input syntax for type
+bytea" on any prompt containing a backslash (file paths, regexes, JSON,
+code). It now hashes `convert_to(prompt, 'UTF8')` — identical for plain ASCII
+prompts, fixing only the previously-broken cases.
+
+The model gateway tables (`malu$model_provider`/`_alias`/`_request`/
+`_response`) and `register_model_provider` / `register_model_alias` /
+`secret_set` / `submit_request` are **global** (configured once by an admin);
+the config binding and the extraction queue are **per-tenant** (owner_schema,
+RLS). No extraction daemon ships in this repo — the daemon contract is the
+`candidate_edges` response JSON above; the SQL surface is exercised by
+simulating a response row (`examples/mist-e2e/04-extraction.sql`). Existing
+schemas pick up the four facades by re-running
+`maludb_core.enable_memory_schema()`.
+
 The extension default_version advances to 0.88.0, adding
 subject/verb-compartmentalized memory search by binding the embedding rail
 to the canonical SVPOR graph. maludb_core already had the three pieces of a
