@@ -7,6 +7,51 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+The extension default_version advances to 0.90.0, adding a focused pair of
+helpers for a **two-way binding between a relational record and a MaluDB
+graph object** (e.g. a `projects` row ↔ a `subject` of type `project`, or a
+`tasks` row ↔ the `upgrade` edge between *Ed* and *Oracle 19c*). It builds
+directly on the 0.84.0 external-reference attribute store
+(`malu$svpor_attribute.ref_source`/`ref_entity`/`ref_key`); no model or
+table changes.
+
+The relationship is two cooperating **soft pointers** — hard FK in neither
+direction, since `maludb_core` is its own RLS-scoped schema and the external
+table may live in another schema/database/system:
+
+- **relational → graph** is a plain `bigint` column on the app's *own* table
+  (`projects.subject_id`, `tasks.statement_id`), written by the app with the
+  id it already has. This is the fast forward path behind every "find related
+  memories" button; it never joins the attribute store, and `memory_search`
+  does not read it either.
+- **graph → relational** is the reference attribute these helpers manage —
+  the reverse index plus display-time resolution.
+
+- `maludb_link_create(target_kind, target_id, ref_source, ref_entity,
+  ref_key, ...)` writes the graph→external back-pointer on an **existing**
+  node/edge and returns the link's `attribute_id`. A thin wrapper over
+  `register_svpor_attribute`: it *requires* the `(source, entity, key)`
+  triplet (what makes it a link, not a generic attribute), maps `p_label →
+  value_text` (cached display label) and `p_snapshot → value_jsonb`, and
+  inherits target validation + the `(owner_schema, target_kind, target_id,
+  attr_name)` upsert. Default `attr_name` `'external_ref'` covers the common
+  single-link case; pass a distinct `attr_name` (`'hr_person'`, `'jira_epic'`)
+  to attach more than one external link to the same object. `provenance`
+  defaults to `'provided'` (app-authoritative); an agent proposing a match
+  passes `'suggested'` and a human later flips it to `'accepted'` via the
+  existing `maludb_svpor_attribute_set_provenance` facade.
+- `maludb_link_resolve(ref_source, ref_entity, ref_key)` is the reverse
+  lookup — the MaluDB object(s) bound to an external record — backed by the
+  `malu$svpor_attribute_ref_idx (owner_schema, ref_source, ref_entity,
+  ref_key)` partial index. `ref_entity` is an optional filter; returns a set.
+
+These are **link-only** (they do not create the node): the single-POST
+"create node + write back-pointer" flow is one transaction in the app
+(`id := register_svpor_subject(...)` then `maludb_link_create('subject', id,
+…)`, store `id` in the relational column). Existing schemas pick up the two
+facades by re-running `maludb_core.enable_memory_schema()`. Exercised by
+`examples/mist-e2e/05-external-link.sql`.
+
 The extension default_version advances to 0.89.0, wiring the in-database
 model gateway into the memory-extraction path so MaluDB owns model selection
 and brokering ("Option B"). PostgreSQL can't make an outbound model/API call
