@@ -1,3 +1,20 @@
+maludb (0.93.0-1) noble; urgency=medium
+
+  * v4.2.0 release. Extension default_version 0.93.0;
+    87/87 pg_regress on PostgreSQL 17.
+  * Memory model: typed subjects/verbs, episodes + SVPO statements,
+    polymorphic attributes + templates, bundled object reads
+    (0.75.0–0.87.0).
+  * Graph-bound vector compartments + memory ingest/search (0.88.0);
+    in-database per-tenant model gateway (0.89.0/0.91.0);
+    relational↔graph external-link helpers (0.90.0); one-call memory
+    ingestion from an extraction JSON object (0.92.0).
+  * 0.93.0 repairs the malu$derivation_ledger derived_object_type
+    CHECK that the 0.82.0 migration narrowed, restoring PageIndex
+    retrieval-summary and ChatIndex topic/message writes.
+
+ -- Edward Honour <ed@maludb.org>  Sat, 06 Jun 2026 00:00:00 +0000
+
 maludb (0.71.0-1) noble; urgency=medium
 
   * v4.0.0 GA package metadata. Extension default_version 0.71.0;

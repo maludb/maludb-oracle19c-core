@@ -14,8 +14,8 @@ provision PostgreSQL manually.
 
 | | |
 |---|---|
-| Version | **0.74.0** (extension, unreleased onboarding role update) — latest release tag `v4.1.0` shipped extension 0.73.0 on 2026-05-19. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
-| Test suite | **80 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
+| Version | **0.93.0** (extension) — latest release tag `v4.2.0` shipped extension 0.93.0 on 2026-06-06 (memory-model episodes/attributes, vector compartments, in-database model gateway, link helpers, one-call extraction ingest, derivation-ledger repair). V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
+| Test suite | **87 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
 | Drivers | Python, Node.js, PHP, C — all four validated against the live extension |
 | External services | `maludb_modeld` (model gateway) + `maludb_mc2dbd` (database MCP listener) + `mcp-broker` (external-tool MCP broker) + `maludb-restd` (V3 REST gateway) + `maludb-realtimed` (V3 SSE event stream) + `maludb-pageindexd` (V4 PageIndex / ChatIndex builder) |
 | Roadmap | `requirements.md` §9 Stages 1–16+ shipped through V4 GA — see [`version4-pageindex-plan.md`](version4-pageindex-plan.md) |
@@ -103,6 +103,71 @@ For read-only users, grant `maludb_read`. On fresh installs where the role name
 is available, `GRANT maludb TO app_user` is also a short alias for
 `GRANT maludb_user TO app_user`. Existing operator installs that already have a
 login role named `maludb` keep using `maludb_user` to avoid privilege confusion.
+
+### Connect from an application server
+
+A fresh install only accepts local connections. Four server-side changes
+are required before an application server on the same network can reach
+the database; all four are needed — if any one is missing, the
+connection fails.
+
+**1. Make PostgreSQL listen on the network.** This is the step that
+blocks everything else: Ubuntu's PostgreSQL 17 default is
+`listen_addresses = 'localhost'`, so remote clients get *connection
+refused* regardless of any `pg_hba.conf` or firewall setup. Edit
+`/etc/postgresql/17/main/postgresql.conf`:
+
+```conf
+listen_addresses = '*'        # or a specific address, e.g. '192.168.100.163'
+```
+
+A full restart is required — `reload` does not apply this setting:
+
+```bash
+sudo systemctl restart postgresql
+ss -tln | grep 5432           # should now show 0.0.0.0:5432 (or your address)
+```
+
+**2. Give the application role a password.** Peer authentication does
+not work over TCP; remote logins use `scram-sha-256`. The `zozocal`
+user created above has no password yet:
+
+```bash
+sudo -u postgres psql -c "ALTER USER zozocal PASSWORD 'choose-a-password'"
+```
+
+**3. Allow the client in `pg_hba.conf`.** Add a `host` line to
+`/etc/postgresql/17/main/pg_hba.conf` for the application server's
+address (or subnet), then reload:
+
+```conf
+# TYPE  DATABASE   USER      ADDRESS               METHOD
+host    mydb       zozocal   192.168.100.0/24      scram-sha-256
+```
+
+```bash
+sudo systemctl reload postgresql
+```
+
+**4. If `ufw` is active, open `5432/tcp` to the client subnet.** The
+[hardening guide](docs/post-install-hardening.md) only opens `5329/tcp`
+(the MC2DB listener); database connections need their own rule:
+
+```bash
+sudo ufw allow from 192.168.100.0/24 to any port 5432 proto tcp
+```
+
+**Verify from the application server** before wiring up a driver:
+
+```bash
+PGPASSWORD='choose-a-password' psql -h <server-address> -p 5432 -U zozocal -d mydb \
+    -c 'select current_user, current_database()'
+```
+
+To expose the MC2DB listener (`:5329`) to the network as well, set
+`HOST=0.0.0.0` together with TLS and a bearer token — see
+[docs/install.md](docs/install.md) §6 and
+[docs/post-install-hardening.md](docs/post-install-hardening.md).
 
 The detailed install playbook is in [docs/install.md](docs/install.md).
 A first-time tutorial is in [docs/getting-started.md](docs/getting-started.md).

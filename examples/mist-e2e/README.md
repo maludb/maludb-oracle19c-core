@@ -8,7 +8,7 @@ PostgreSQL 17, 2026-05-31.
 
 | File | What it does |
 |------|--------------|
-| `00-bootstrap-0.86.1.sh` | Drops/creates the `mist_e2e` database, `CREATE EXTENSION maludb_core CASCADE`, then applies the repo's delta scripts up to 0.86.1. Only needed if your server's `default_version` is below 0.86.1. |
+| `00-bootstrap-0.86.1.sh` | **Obsolete for ≥ 0.92.0** (its delta list stops at 0.86.1) — on a current install just `CREATE DATABASE` + `CREATE EXTENSION maludb_core CASCADE`. Historical: drops/creates the `mist_e2e` database, `CREATE EXTENSION maludb_core CASCADE`, then applies the repo's delta scripts up to 0.86.1. |
 | `01-part1.sql` | Part I — project + first-day team (subjects, verbs, role statements with edge-attribute titles, project attributes, kickoff episode) and the Q1–Q7 query gauntlet. |
 | `02-part2.sql` | Part II — sprints/tasks as episodes, `part_of` hierarchy, a review meeting + generated document, staffing changes (Joe leaves / Priya joins via valid-time), HR reference attribute, and the temporal re-gauntlet Q8–Q12. |
 

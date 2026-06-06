@@ -5,7 +5,50 @@ All notable changes to MaluDB land here. The format follows
 versions correspond to the extension migration chain
 (`maludb_core--X.Y--X.Z.sql`) plus a release tag.
 
-## Unreleased
+## v4.2.0 — 2026-06-06
+
+The extension default_version advances to 0.93.0, a **repair release** for the
+`malu$derivation_ledger.derived_object_type` CHECK constraint. The
+0.81.0 → 0.82.0 migration rebuilt that CHECK from a stale copy of the list
+when it registered `svpor_statement`: it silently dropped
+`retrieval_summary` (added in 0.66.0) and `chat_index_tree` /
+`chat_index_topic` / `chat_index_message` (added in 0.67.0/0.68.0). Every
+install at ≥ 0.82.0 has since rejected PageIndex retrieval-summary and
+ChatIndex topic/message ledger rows (`record_derivation` raised
+`check_violation`, breaking `retrieve_with_envelope_tree`,
+`chat_index_record_topic` and `chat_index_append_messages`). 0.93.0 rebuilds
+the CHECK as the union of every type ever registered; no data backfill is
+needed because the broken paths failed loudly. Found by restoring the full
+regression suite to green for this release (`page_index_descent`,
+`chat_index_catalog`, `chat_index_append`).
+
+0.93.0 also converges the cumulative fresh-install bundle with the upgrade
+chain (verified by the new snapshot gate below): the 0.81.0+ bundles had
+folded `malu$document_type` in **without the tenant GRANTs** the
+0.80.3 → 0.81.0 delta ships (a fresh bundle install left the document-type
+picker unreadable/unwritable for tenant roles), and carried a paraphrased
+copy of `_enable_memory_schema_0810_facade`. The 0.93.0 step re-issues the
+grants (idempotent on upgraded databases) and re-emits the canonical
+function text.
+
+Release hygiene shipped alongside the repair:
+
+- Version-pinned regression tests now derive their expectations from
+  `maludb_core_version()` instead of hardcoded versions (`load` baseline,
+  `skill_discovery`, `metrics_scrape`, `preview_env`), and stale baselines
+  were regenerated for the 0.75.0 → 0.92.0 feature growth (`catalog`,
+  `provider`, `r10_tools`, `schema_memory_*`, `svpor_classifier_md`).
+- `skill_discovery` / `skill_discovery_fork` register the `document` subject
+  type they use (the 0.75.0 typed-subject registry does not seed it) and
+  clean up the SVPOR rows they create; `schema_memory_enablement` targets the
+  0.91.0 per-tenant `(owner_schema, provider_name)` unique;
+  `schema_memory_ingestion` deletes `malu$svpor_statement` /
+  `malu$svpor_subject_relationship_edge` rows before the subjects/verbs they
+  reference.
+- New `scripts/maludb-ext-snapshot.sql`: a catalog-based snapshot of
+  extension member objects (pg_dump excludes them) used as the release gate
+  proving a fresh install of the cumulative bundle is equivalent to a
+  database that walked the upgrade chain.
 
 The extension default_version advances to 0.92.0, adding **one-call memory
 ingestion from an extraction JSON object**. The project does not run any LLM;

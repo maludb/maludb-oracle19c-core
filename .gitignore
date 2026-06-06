@@ -40,29 +40,33 @@ debian/tmp/
 # Claude session logs that the harness writes per-cwd
 **/docs/claude-log/
 # Internal session / process artifacts — never commit these publicly
-  I-AM-DONE-HERE-*.md
-  *-status.md
-  20[0-9][0-9][0-9][0-9][0-9][0-9]-*.md
-  AGENTS.md
-  CLAUDE.md
-  .codex/
-  .cursor/
+# (NOTE: gitignore patterns must not be indented — leading whitespace is
+# matched literally, which silently disabled this whole block before.)
+I-AM-DONE-HERE-*.md
+*-status.md
+20[0-9][0-9][0-9][0-9][0-9][0-9]-*.md
+AGENTS.md
+CLAUDE.md
+.codex/
+.cursor/
 
-  # Tester-machine state
-  fieldtest-*.log
-  *.dump
-  *.sql.gz
-  core
-  core.*
+# Tester-machine state
+fieldtest-*.log
+*.dump
+*.sql.gz
+core
+core.*
 
-  # Editor / OS junk
-  .vscode/
-  .idea/
-  .DS_Store
-  Thumbs.db
+# Editor / OS junk
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.*.swp
+*.swp
 
-  # Local environment files
-  .env
-  .env.*
-  !.env.example
+# Local environment files
+.env
+.env.*
+!.env.example
 
