@@ -72,4 +72,4 @@ ERROR:  invalid provider kind: invalid (expected one of cloud_api, local_http, l
 CONTEXT:  PL/pgSQL function register_model_provider(text,text,text,text,text) line 7 at RAISE
 SELECT register_model_alias('bad-alias', 'no-such-provider', 'm');
 ERROR:  unknown provider: no-such-provider
-CONTEXT:  PL/pgSQL function register_model_alias(text,text,text,text,text,text,integer,jsonb) line 10 at RAISE
+CONTEXT:  PL/pgSQL function register_model_alias(text,text,text,text,text,text,integer,jsonb) line 15 at RAISE

@@ -323,7 +323,7 @@ BEGIN
         data_sensitivity
     )
     VALUES ('sme-provider', 'stub', 'sme-adapter', 'internal')
-    ON CONFLICT (provider_name) DO UPDATE
+    ON CONFLICT (owner_schema, provider_name) DO UPDATE
        SET adapter_name = EXCLUDED.adapter_name
     RETURNING provider_id INTO v_provider_id;
 

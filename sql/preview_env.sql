@@ -6,13 +6,13 @@ SET search_path TO maludb_core, public;
 -- Test 1: preview_env_create with the default (production_data=false)
 -- seed_policy succeeds.
 -- ---------------------------------------------------------------------
-SELECT preview_env_create('pe_smoke', '0.72.0',
+SELECT preview_env_create('pe_smoke', maludb_core_version(),
                           '{"production_data": false}'::jsonb,
                           NULL, 'V3-ENV-01 smoke') AS env_id \gset e_
 
 SELECT name,
-       base_migration,
-       current_migration,
+       base_migration = maludb_core_version() AS base_migration_current,
+       current_migration = maludb_core_version() AS current_migration_current,
        COALESCE(anonymizer_ref, '<null>') AS anonymizer_ref
 FROM malu$preview_env WHERE env_id = :'e_env_id'::bigint;
 
@@ -21,7 +21,7 @@ FROM malu$preview_env WHERE env_id = :'e_env_id'::bigint;
 -- ---------------------------------------------------------------------
 DO $body$
 BEGIN
-    PERFORM preview_env_create('pe_prod_bad', '0.72.0',
+    PERFORM preview_env_create('pe_prod_bad', maludb_core_version(),
                                '{"production_data": true}'::jsonb,
                                NULL, NULL);
     RAISE EXCEPTION 'accepted production_data=true (test 2 fail)';
@@ -44,7 +44,8 @@ SELECT gate, ok FROM preview_env_promote_check(:'e_env_id'::bigint) ORDER BY gat
 -- ---------------------------------------------------------------------
 -- Test 4: list.
 -- ---------------------------------------------------------------------
-SELECT name, seed_count, current_migration
+SELECT name, seed_count,
+       current_migration = maludb_core_version() AS migration_current
 FROM preview_env_list() WHERE name = 'pe_smoke';
 
 -- ---------------------------------------------------------------------

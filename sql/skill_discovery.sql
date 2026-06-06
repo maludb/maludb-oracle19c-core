@@ -218,6 +218,8 @@ DROP SCHEMA IF EXISTS skill_b CASCADE;
 DROP ROLE IF EXISTS sd_user_a;
 DROP ROLE IF EXISTS sd_user_b;
 DROP ROLE IF EXISTS sd_public_curator;
+DELETE FROM maludb_core.malu$svpor_subject_type
+WHERE subject_type = 'document' AND NOT system_defined;
 
 SET client_min_messages = NOTICE;
 
@@ -246,11 +248,17 @@ FROM maludb_core.enable_memory_schema('skill_a');
 SELECT object_count >= 56 AS skill_b_enabled
 FROM maludb_core.enable_memory_schema('skill_b');
 
-SELECT enabled_version = '0.74.0' AS skill_schema_enabled_version_current
+SELECT enabled_version = maludb_core.maludb_core_version() AS skill_schema_enabled_version_current
 FROM maludb_core.malu$enabled_schema
 WHERE schema_name = 'skill_a';
 
 GRANT USAGE ON SCHEMA skill_b TO sd_user_a;
+
+-- The 0.75.0 typed-subject registry only seeds the standard types; register
+-- the 'document' type this test's fixtures use (removed again in cleanup).
+INSERT INTO maludb_core.malu$svpor_subject_type(subject_type, display_name, description, sort_order, system_defined)
+VALUES ('document', 'Document', 'skill_discovery regression test fixture type', 500, false)
+ON CONFLICT (subject_type) DO NOTHING;
 
 SET ROLE sd_user_a;
 SET search_path TO skill_a, maludb_core, public;
@@ -1117,6 +1125,14 @@ BEGIN
                 USING v_schema;
             END IF;
         END LOOP;
+        IF to_regclass('maludb_core.malu$svpor_subject') IS NOT NULL THEN
+            EXECUTE 'DELETE FROM maludb_core."malu$svpor_subject" WHERE owner_schema = $1'
+            USING v_schema;
+        END IF;
+        IF to_regclass('maludb_core.malu$svpor_verb') IS NOT NULL THEN
+            EXECUTE 'DELETE FROM maludb_core."malu$svpor_verb" WHERE owner_schema = $1'
+            USING v_schema;
+        END IF;
         IF to_regclass('maludb_core.malu$enabled_schema_object') IS NOT NULL THEN
             EXECUTE 'DELETE FROM maludb_core."malu$enabled_schema_object" WHERE schema_name = $1'
             USING v_schema;
@@ -1140,3 +1156,5 @@ $body$;
 DROP ROLE IF EXISTS sd_user_a;
 DROP ROLE IF EXISTS sd_user_b;
 DROP ROLE IF EXISTS sd_public_curator;
+DELETE FROM maludb_core.malu$svpor_subject_type
+WHERE subject_type = 'document' AND NOT system_defined;

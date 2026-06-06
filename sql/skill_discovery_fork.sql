@@ -218,6 +218,8 @@ DROP SCHEMA IF EXISTS fork_source CASCADE;
 DROP ROLE IF EXISTS sd_fork_user_a;
 DROP ROLE IF EXISTS sd_fork_source_user;
 DROP ROLE IF EXISTS sd_public_curator;
+DELETE FROM maludb_core.malu$svpor_subject_type
+WHERE subject_type = 'document' AND NOT system_defined;
 
 SET client_min_messages = NOTICE;
 
@@ -238,6 +240,12 @@ CREATE SCHEMA maludb_public AUTHORIZATION sd_public_curator;
 SELECT maludb_core.enable_memory_schema('fork_a') IS NOT NULL AS fork_schema_enabled;
 SELECT maludb_core.enable_memory_schema('fork_source') IS NOT NULL AS source_schema_enabled;
 SELECT maludb_core.enable_memory_schema('maludb_public') IS NOT NULL AS public_schema_enabled;
+
+-- The 0.75.0 typed-subject registry only seeds the standard types; register
+-- the 'document' type this test's fixtures use (removed again in cleanup).
+INSERT INTO maludb_core.malu$svpor_subject_type(subject_type, display_name, description, sort_order, system_defined)
+VALUES ('document', 'Document', 'skill_discovery_fork regression test fixture type', 500, false)
+ON CONFLICT (subject_type) DO NOTHING;
 
 SET ROLE sd_public_curator;
 SET search_path TO maludb_public, maludb_core, public;
@@ -726,6 +734,14 @@ BEGIN
                 USING v_schema;
             END IF;
         END LOOP;
+        IF to_regclass('maludb_core.malu$svpor_subject') IS NOT NULL THEN
+            EXECUTE 'DELETE FROM maludb_core."malu$svpor_subject" WHERE owner_schema = $1'
+            USING v_schema;
+        END IF;
+        IF to_regclass('maludb_core.malu$svpor_verb') IS NOT NULL THEN
+            EXECUTE 'DELETE FROM maludb_core."malu$svpor_verb" WHERE owner_schema = $1'
+            USING v_schema;
+        END IF;
         IF to_regclass('maludb_core.malu$enabled_schema_object') IS NOT NULL THEN
             EXECUTE 'DELETE FROM maludb_core."malu$enabled_schema_object" WHERE schema_name = $1'
             USING v_schema;
@@ -749,3 +765,5 @@ $body$;
 DROP ROLE IF EXISTS sd_fork_user_a;
 DROP ROLE IF EXISTS sd_fork_source_user;
 DROP ROLE IF EXISTS sd_public_curator;
+DELETE FROM maludb_core.malu$svpor_subject_type
+WHERE subject_type = 'document' AND NOT system_defined;

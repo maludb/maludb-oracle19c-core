@@ -13,7 +13,7 @@ FROM malu$mc2db_tool t JOIN malu$mc2db_server s USING (server_id)
 WHERE s.server_name = 'maludb.r10';
  r10_tool_count 
 ----------------
-             14
+             17
 (1 row)
 
 SELECT implementation_type, count(*) AS n
@@ -24,7 +24,7 @@ GROUP BY implementation_type ORDER BY implementation_type;
 ---------------------+----
  external_exec       |  1
  mcp_proxy           |  1
- sql_function        | 12
+ sql_function        | 15
 (3 rows)
 
 -- 2. Stable registration order (alphabetical-by-name)
@@ -48,7 +48,10 @@ ORDER BY tool_name;
  maludb.responses.get          | sql_function
  maludb.sessions.create        | sql_function
  maludb.sessions.get           | sql_function
-(14 rows)
+ skill.find                    | sql_function
+ skill.fork                    | sql_function
+ skill.get                     | sql_function
+(17 rows)
 
 -- ----- helper: bracket each tool call inside a request --------------
 -- Each section: _begin_request → SELECT r10_<tool>(args, context) → _end_request

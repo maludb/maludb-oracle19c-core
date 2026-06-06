@@ -63,7 +63,13 @@ FROM maludb_verb
 ORDER BY canonical_name;
 canonical_name|classifier_md
 approves|# approves\nTrigger on approved or authorized.
-(1 row)
+attended|
+concerns|
+generated_by|
+involves|
+made_during|
+mentions|
+(7 rows)
 -- the writable subject view accepts classifier_md directly, and the
 -- stakeholder subject-filter facade surfaces it
 INSERT INTO maludb_subject(subject_type, canonical_name, classifier_md)

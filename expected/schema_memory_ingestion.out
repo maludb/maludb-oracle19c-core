@@ -13,6 +13,8 @@ DECLARE
         'malu$vector_compartment',
         'malu$vector_subject',
         'malu$vector_verb',
+        'malu$svpor_statement',
+        'malu$svpor_subject_relationship_edge',
         'malu$svpor_subject',
         'malu$svpor_verb',
         'malu$memory_detail_object',
@@ -75,7 +77,7 @@ SET search_path TO smi, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-82
+132
 (1 row)
 INSERT INTO maludb_raw_ingest(source_type, source_name, payload_jsonb)
 VALUES ('prompt_session', 'codex', '{"prompt":"p","response":"r"}')
@@ -187,7 +189,7 @@ unapplied_count_after_cross_owner_extraction
 RESET ROLE;
 SET search_path TO maludb_core, public;
 DROP SCHEMA smi CASCADE;
-NOTICE:  drop cascades to 81 other objects
+NOTICE:  drop cascades to 129 other objects
 DETAIL:  drop cascades to view smi.maludb_subject
 drop cascades to view smi.maludb_verb
 drop cascades to view smi.maludb_subject_verb
@@ -205,7 +207,6 @@ drop cascades to view smi.maludb_document_tag
 drop cascades to view smi.maludb_document_suggested_tag
 drop cascades to view smi.maludb_raw_ingest
 drop cascades to view smi.maludb_unapplied_ingest
-drop cascades to function smi.maludb_upload_document(text,text,text,jsonb,text,text[],text[],text[],text[],jsonb)
 drop cascades to view smi.maludb_memory_pool
 drop cascades to view smi.maludb_memory_pool_member
 drop cascades to view smi.maludb_memory_pool_tag
@@ -268,7 +269,28 @@ drop cascades to function smi.maludb_svpor_relationship_delete(text,bigint,text,
 drop cascades to function smi.maludb_pool_remove_named_member(text,text,text)
 drop cascades to function smi.maludb_project_archive(bigint)
 drop cascades to function smi.maludb_project_unarchive(bigint)
-drop cascades to function smi.maludb_register_episode(text,text,text,jsonb,timestamp with time zone,timestamp with time zone,text)
+drop cascades to function smi.maludb_subject_relationship_close(bigint,timestamp with time zone)
+drop cascades to function smi.maludb_subject_relationship_delete(bigint)
+drop cascades to function smi.maludb_subject_relationship_set_type(bigint,text)
+drop cascades to view smi.maludb_document_type
+drop cascades to function smi.maludb_upload_document(text,text,text,jsonb,text,text[],text[],text[],text[],jsonb,text)
+drop cascades to view smi.maludb_episode_type
+drop cascades to view smi.maludb_svpor_statement
+drop cascades to function smi.maludb_svpor_statement_create(text,bigint,bigint,text,bigint,bigint,timestamp with time zone,timestamp with time zone,numeric,text,bigint,jsonb)
+drop cascades to function smi.maludb_svpor_statement_close(bigint,timestamp with time zone)
+drop cascades to function smi.maludb_svpor_statement_delete(bigint)
+drop cascades to function smi.maludb_svpor_statement_set_provenance(bigint,text)
+drop cascades to view smi.maludb_episode
+drop cascades to function smi.maludb_episode_get(bigint)
+drop cascades to function smi.maludb_register_episode(text,text,text,jsonb,timestamp with time zone,timestamp with time zone,text,text)
+drop cascades to view smi.maludb_svpor_attribute
+drop cascades to view smi.maludb_attribute_template
+drop cascades to function smi.maludb_svpor_attribute_delete(bigint)
+drop cascades to function smi.maludb_svpor_attribute_set_provenance(bigint,text)
+drop cascades to function smi.maludb_attribute_template_create(text,text,text,text,text,text,text,text,jsonb,jsonb,integer)
+drop cascades to function smi.maludb_attribute_template_delete(bigint)
+drop cascades to function smi.maludb_attribute_check(text,bigint)
+and 29 other objects (see server log for list)
 DROP SCHEMA smi_other CASCADE;
 DO $body$
 DECLARE
@@ -281,6 +303,8 @@ DECLARE
         'malu$vector_compartment',
         'malu$vector_subject',
         'malu$vector_verb',
+        'malu$svpor_statement',
+        'malu$svpor_subject_relationship_edge',
         'malu$svpor_subject',
         'malu$svpor_verb',
         'malu$memory_detail_object',

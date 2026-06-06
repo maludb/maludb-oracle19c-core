@@ -165,17 +165,18 @@ else
 fi
 
 # ---------------------------------------------------------------------
-# 6. R1.0-8 + R1.1-14 catalog: 14 tools registered under maludb.r10
-#    (13 from R1.0-8 + maludb.memory.search.exact from R1.1-14)
+# 6. R1.0-8 + R1.1-14 + 0.73.0 catalog: 17 tools registered under
+#    maludb.r10 (13 from R1.0-8 + maludb.memory.search.exact from
+#    R1.1-14 + skill.find/skill.get/skill.fork from 0.73.0)
 # ---------------------------------------------------------------------
 TOOL_COUNT=$(q "
 SELECT count(*) FROM maludb_core.malu\$mc2db_tool t
 JOIN maludb_core.malu\$mc2db_server s USING (server_id)
 WHERE s.server_name='maludb.r10'" 2>/dev/null || echo 0)
-if [ "$TOOL_COUNT" = "14" ]; then
-    ok "14 maludb.r10 tools registered (13 R1.0 + 1 R1.1)"
+if [ "$TOOL_COUNT" = "17" ]; then
+    ok "17 maludb.r10 tools registered (13 R1.0 + 1 R1.1 + 3 skill discovery)"
 else
-    ko "expected 14 tools under maludb.r10, found $TOOL_COUNT"
+    ko "expected 17 tools under maludb.r10, found $TOOL_COUNT"
 fi
 
 # ---------------------------------------------------------------------

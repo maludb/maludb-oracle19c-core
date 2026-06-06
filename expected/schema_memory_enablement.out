@@ -174,7 +174,7 @@ ERROR:  enable_memory_schema: refusing to replace unmanaged view sme_block.malud
 CONTEXT:  PL/pgSQL function _memory_schema_assert_object_slot(name,name,text) line 39 at RAISE
 SQL statement "SELECT maludb_core._memory_schema_assert_object_slot(p_schema, 'maludb_document', 'view')"
 PL/pgSQL function _enable_memory_schema_ingest_facade(name) line 7 at PERFORM
-PL/pgSQL function enable_memory_schema(name) line 44 at assignment
+PL/pgSQL function enable_memory_schema(name) line 33 at assignment
 RESET ROLE;
 SET search_path TO maludb_core, public;
 DROP SCHEMA sme_block CASCADE;
@@ -186,16 +186,18 @@ SET search_path TO sme_a, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-82
+132
 (1 row)
 SELECT object_count AS enable_refresh_object_count
 FROM maludb_core.enable_memory_schema();
-NOTICE:  drop cascades to 3 other objects
+NOTICE:  drop cascades to 4 other objects
 DETAIL:  drop cascades to view sme_a.maludb_project
 drop cascades to view sme_a.maludb_stakeholder
 drop cascades to view sme_a.maludb_person
+drop cascades to view sme_a.maludb_subject_with_attributes
+NOTICE:  drop cascades to view sme_a.maludb_document_with_attributes
 enable_refresh_object_count
-82
+132
 (1 row)
 SELECT bool_and(c.oid IS NOT NULL) AS enabled_facades_created
 FROM unnest(ARRAY[
@@ -355,7 +357,7 @@ BEGIN
         data_sensitivity
     )
     VALUES ('sme-provider', 'stub', 'sme-adapter', 'internal')
-    ON CONFLICT (provider_name) DO UPDATE
+    ON CONFLICT (owner_schema, provider_name) DO UPDATE
        SET adapter_name = EXCLUDED.adapter_name
     RETURNING provider_id INTO v_provider_id;
 
@@ -798,7 +800,7 @@ b_pre_enable_subject_count
 RESET ROLE;
 SET search_path TO maludb_core, public;
 DROP SCHEMA sme_a CASCADE;
-NOTICE:  drop cascades to 81 other objects
+NOTICE:  drop cascades to 129 other objects
 DETAIL:  drop cascades to view sme_a.maludb_verb
 drop cascades to view sme_a.maludb_subject_verb
 drop cascades to function sme_a.maludb_subject_verb_create(text,text,text,integer,text,text)
@@ -811,7 +813,6 @@ drop cascades to view sme_a.maludb_document_tag
 drop cascades to view sme_a.maludb_document_suggested_tag
 drop cascades to view sme_a.maludb_raw_ingest
 drop cascades to view sme_a.maludb_unapplied_ingest
-drop cascades to function sme_a.maludb_upload_document(text,text,text,jsonb,text,text[],text[],text[],text[],jsonb)
 drop cascades to view sme_a.maludb_memory_pool
 drop cascades to view sme_a.maludb_memory_pool_member
 drop cascades to view sme_a.maludb_memory_pool_tag
@@ -872,14 +873,35 @@ drop cascades to function sme_a.maludb_svpor_relationship_delete(text,bigint,tex
 drop cascades to function sme_a.maludb_pool_remove_named_member(text,text,text)
 drop cascades to function sme_a.maludb_project_archive(bigint)
 drop cascades to function sme_a.maludb_project_unarchive(bigint)
-drop cascades to function sme_a.maludb_register_episode(text,text,text,jsonb,timestamp with time zone,timestamp with time zone,text)
-drop cascades to view sme_a.maludb_subject
-drop cascades to view sme_a.maludb_project
-drop cascades to view sme_a.maludb_stakeholder
-drop cascades to view sme_a.maludb_memory
-drop cascades to view sme_a.maludb_document
-drop cascades to view sme_a.maludb_skill
-drop cascades to view sme_a.maludb_person
+drop cascades to function sme_a.maludb_subject_relationship_close(bigint,timestamp with time zone)
+drop cascades to function sme_a.maludb_subject_relationship_delete(bigint)
+drop cascades to function sme_a.maludb_subject_relationship_set_type(bigint,text)
+drop cascades to view sme_a.maludb_document_type
+drop cascades to function sme_a.maludb_upload_document(text,text,text,jsonb,text,text[],text[],text[],text[],jsonb,text)
+drop cascades to view sme_a.maludb_episode_type
+drop cascades to view sme_a.maludb_svpor_statement
+drop cascades to function sme_a.maludb_svpor_statement_create(text,bigint,bigint,text,bigint,bigint,timestamp with time zone,timestamp with time zone,numeric,text,bigint,jsonb)
+drop cascades to function sme_a.maludb_svpor_statement_close(bigint,timestamp with time zone)
+drop cascades to function sme_a.maludb_svpor_statement_delete(bigint)
+drop cascades to function sme_a.maludb_svpor_statement_set_provenance(bigint,text)
+drop cascades to view sme_a.maludb_episode
+drop cascades to function sme_a.maludb_episode_get(bigint)
+drop cascades to function sme_a.maludb_register_episode(text,text,text,jsonb,timestamp with time zone,timestamp with time zone,text,text)
+drop cascades to view sme_a.maludb_attribute_template
+drop cascades to function sme_a.maludb_svpor_attribute_delete(bigint)
+drop cascades to function sme_a.maludb_svpor_attribute_set_provenance(bigint,text)
+drop cascades to function sme_a.maludb_attribute_template_create(text,text,text,text,text,text,text,text,jsonb,jsonb,integer)
+drop cascades to function sme_a.maludb_attribute_template_delete(bigint)
+drop cascades to function sme_a.maludb_attribute_check(text,bigint)
+drop cascades to function sme_a.maludb_svpor_attribute_create(text,bigint,text,timestamp with time zone,tstzrange,numeric,text,jsonb,text,text,numeric,timestamp with time zone,timestamp with time zone,jsonb,text,text,text)
+drop cascades to function sme_a.maludb_attributes_apply(text,bigint,jsonb)
+drop cascades to function sme_a.maludb_attributes(text,bigint)
+drop cascades to function sme_a.maludb_object_get(text,bigint)
+drop cascades to view sme_a.maludb_episode_with_attributes
+drop cascades to function sme_a.maludb_reference_view_sql(text,text,text,text,text,text,text,boolean,text[],text[])
+drop cascades to function sme_a.maludb_create_reference_view(text,text,text,text,text,text,text,boolean,text[],text[],boolean)
+drop cascades to view sme_a.maludb_edge
+and 29 other objects (see server log for list)
 DROP SCHEMA sme_b CASCADE;
 DO $body$
 DECLARE

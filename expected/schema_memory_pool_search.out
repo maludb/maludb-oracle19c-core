@@ -70,7 +70,7 @@ SET search_path TO smp, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-82
+132
 (1 row)
 INSERT INTO maludb_subject(subject_type, canonical_name, aliases, description)
 VALUES ('project', 'zozocal', ARRAY['zzc'], 'schema-memory pool search project')
@@ -242,7 +242,7 @@ forged_foreign_search_hits
 RESET ROLE;
 SET search_path TO maludb_core, public;
 DROP SCHEMA smp CASCADE;
-NOTICE:  drop cascades to 81 other objects
+NOTICE:  drop cascades to 129 other objects
 DETAIL:  drop cascades to view smp.maludb_subject
 drop cascades to view smp.maludb_verb
 drop cascades to view smp.maludb_subject_verb
@@ -260,7 +260,6 @@ drop cascades to view smp.maludb_document_tag
 drop cascades to view smp.maludb_document_suggested_tag
 drop cascades to view smp.maludb_raw_ingest
 drop cascades to view smp.maludb_unapplied_ingest
-drop cascades to function smp.maludb_upload_document(text,text,text,jsonb,text,text[],text[],text[],text[],jsonb)
 drop cascades to view smp.maludb_memory_pool
 drop cascades to view smp.maludb_memory_pool_member
 drop cascades to view smp.maludb_memory_pool_tag
@@ -323,7 +322,28 @@ drop cascades to function smp.maludb_svpor_relationship_delete(text,bigint,text,
 drop cascades to function smp.maludb_pool_remove_named_member(text,text,text)
 drop cascades to function smp.maludb_project_archive(bigint)
 drop cascades to function smp.maludb_project_unarchive(bigint)
-drop cascades to function smp.maludb_register_episode(text,text,text,jsonb,timestamp with time zone,timestamp with time zone,text)
+drop cascades to function smp.maludb_subject_relationship_close(bigint,timestamp with time zone)
+drop cascades to function smp.maludb_subject_relationship_delete(bigint)
+drop cascades to function smp.maludb_subject_relationship_set_type(bigint,text)
+drop cascades to view smp.maludb_document_type
+drop cascades to function smp.maludb_upload_document(text,text,text,jsonb,text,text[],text[],text[],text[],jsonb,text)
+drop cascades to view smp.maludb_episode_type
+drop cascades to view smp.maludb_svpor_statement
+drop cascades to function smp.maludb_svpor_statement_create(text,bigint,bigint,text,bigint,bigint,timestamp with time zone,timestamp with time zone,numeric,text,bigint,jsonb)
+drop cascades to function smp.maludb_svpor_statement_close(bigint,timestamp with time zone)
+drop cascades to function smp.maludb_svpor_statement_delete(bigint)
+drop cascades to function smp.maludb_svpor_statement_set_provenance(bigint,text)
+drop cascades to view smp.maludb_episode
+drop cascades to function smp.maludb_episode_get(bigint)
+drop cascades to function smp.maludb_register_episode(text,text,text,jsonb,timestamp with time zone,timestamp with time zone,text,text)
+drop cascades to view smp.maludb_svpor_attribute
+drop cascades to view smp.maludb_attribute_template
+drop cascades to function smp.maludb_svpor_attribute_delete(bigint)
+drop cascades to function smp.maludb_svpor_attribute_set_provenance(bigint,text)
+drop cascades to function smp.maludb_attribute_template_create(text,text,text,text,text,text,text,text,jsonb,jsonb,integer)
+drop cascades to function smp.maludb_attribute_template_delete(bigint)
+drop cascades to function smp.maludb_attribute_check(text,bigint)
+and 29 other objects (see server log for list)
 DO $body$
 DECLARE
     v_schema name := 'smp';
