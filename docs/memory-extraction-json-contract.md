@@ -1,5 +1,16 @@
 # Memory-Extraction JSON Contract
 
+> **0.95.0 note (no contract change):** the deferred embedding worker is now
+> defined at the **entity** level — see
+> [semantic-entity-embeddings.md](semantic-entity-embeddings.md). The ingest
+> still accepts **no embedding fields** (deliberate: a pipeline-computed
+> vector is a mention-level view; entity vectors are rendered from merged DB
+> state and refreshed via a trigger-fed dirty queue that this ingest feeds
+> automatically). The chunk-compartment rail (`maludb_memory_search`) is
+> **frozen/deprecated**; its span worker will not be built. Each edge's
+> `source_span` now **accretes** into `metadata_jsonb.source_spans[]`
+> (newest first, deduped, capped at 8) instead of last-writer-wins.
+>
 > **Status: REVISED for 0.94.0 (BREAKING) — 2026-06-07.** Episodes were folded
 > into subjects ("a standup meeting is an event"): the `episodes[]` section is
 > **removed and rejected** by the ingest, and events are now `subjects[]`
@@ -36,10 +47,16 @@ given the canonical match-list, so the DB resolves a subject/verb by exact
 canonical name or alias and **only creates a new one if it isn't already
 present**.
 
-**Deferred (separate worker, not this contract):** embeddings. Each edge carries
-its `source_span`, so a later worker can embed it into the correct `(subject,
-verb)` compartment and link the chunk back to the statement. Until then, edges
-exist in the graph but are not yet returned by `maludb_memory_search`.
+**Deferred (separate worker, not this contract):** embeddings — and since
+0.95.0 the worker's DB side exists at the **entity** level: every
+subject/verb/edge this ingest touches is marked in a dirty queue
+(`maludb_embedding_dirty`), an external worker claims deterministic entity
+*cards* (`maludb_embedding_dirty_claim`) and posts vectors back
+(`maludb_embedding_complete`). Search/jumps run over those entity vectors
+(`maludb_semantic_search`, `similar_to` traversal). The former plan — embed
+each `source_span` into a `(subject, verb)` chunk compartment — is
+**retired**: `maludb_memory_search` and the compartment tables stay
+installed but frozen and deprecated.
 
 ---
 
@@ -159,7 +176,7 @@ status / timing / "performed" live in **edge attributes**, not in the verb.
 |---|---|
 | endpoints + `verb` | SVO statement (idempotent on the SVO identity) |
 | `attributes[]` | edge attributes on the statement |
-| `source_span`, `confidence` | carried in the statement `metadata_jsonb` / `confidence`; `source_span` is what the embedding worker uses later |
+| `source_span`, `confidence` | carried in the statement `metadata_jsonb` / `confidence`; `source_span` holds the latest span and (0.95.0) accretes into `metadata_jsonb.source_spans[]` — per-mention verbatim history (newest first, deduped, cap 8) |
 
 Since 0.94.0 **event keys resolve to `subject` endpoints** — there is no
 separate episode addressing in this contract. (`episode_object` remains a

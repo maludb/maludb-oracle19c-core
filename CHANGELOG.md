@@ -5,7 +5,66 @@ All notable changes to MaluDB land here. The format follows
 versions correspond to the extension migration chain
 (`maludb_core--X.Y--X.Z.sql`) plus a release tag.
 
-## Unreleased — 0.94.0
+## Unreleased — 0.95.0
+
+The "semantic spine": subjects, verbs and edges (SVO statements) become the
+vector layer. Embeddings are rendered from **merged** database state by
+deterministic in-DB *card* functions and computed by an external worker (the
+DB never calls a model) via a trigger-fed dirty queue; vectors land in the
+0.86.0 object-embedding rail (`malu$object_embedding` + `semantic_search`),
+populated for the first time. Similarity materializes as **opt-in traversal
+jumps**. Design: `docs/semantic-entity-embeddings.md`. Decisions locked
+2026-06-07.
+
+- **Cards**: `subject_card_text` / `verb_card_text` / `statement_card_text`
+  / `embedding_card` (+ sha256 content hash, `embed_render_version()`) —
+  deterministic, name-first, content-dominant, UTC-pinned embedding inputs.
+- **Dirty queue**: `malu$embedding_dirty` (PK-coalesced, `generation`
+  counter) + AFTER triggers on `malu$svpor_subject/_verb/_statement`,
+  `malu$svpor_attribute` (accretion invalidates cards) and
+  `malu$episode_object`; deletes purge queue rows, entity-card vectors and
+  semantic edges (no orphans). The migration seeds the queue with every
+  existing entity.
+- **Worker protocol** (per-tenant facades): `maludb_embedding_dirty_claim`
+  (FOR UPDATE SKIP LOCKED; hash-unchanged and vanished objects are
+  completed in-claim), `maludb_embedding_dirty_complete`
+  (generation-checked — a mid-embed accretion survives),
+  `maludb_embedding_complete` (store + retire + refresh jumps),
+  `maludb_embedding_requeue_all`, `maludb_embedding_backfill`.
+  `malu$object_embedding` gains `content_hash` (+ a 10-arg
+  `register_object_embedding` overload; the 9-arg delegates).
+- **Semantic edges**: `malu$semantic_edge` (worker-maintained top-k cosine
+  neighbors per subject/statement, reciprocal upserts) +
+  `semantic_edges_refresh(_all)` + query-time `uedge_semantic_neighbors` /
+  `maludb_semantic_neighbors`.
+- **Traversal**: `malu$edge_unified` gains arm 3 — **gap fix**:
+  `malu$svpor_subject_relationship_edge` (where the 0.92.0 ingest writes
+  `relationships[]`) was never unioned in, so ingested relationships were
+  invisible to walks — and arm 4 (`semantic_edge`, rel `similar_to` /
+  `similar_statement`). `uedge_neighbors`/`uedge_walk` get a guard so
+  semantic edges traverse **only** when named in `p_rel_filter`: a NULL
+  filter stays bit-identical to 0.94.0 (jumps are opt-in by design).
+- **Verbatim-recall compensation**: the ingest's statement upsert accretes
+  `metadata_jsonb.source_spans[]` (newest first, deduped per
+  span+document, cap 8) via `_statement_spans_accrete`; `source_span`
+  (latest) is preserved. No extraction-contract change — and none for the
+  embedding flow either (mention-vs-entity rationale in the design doc).
+- **Chunk-compartment rail FROZEN** (decision): `malu$vector_compartment` /
+  `malu$vector_chunk` / `maludb_memory_search` stay installed and answer
+  over existing data, but the span-backfill worker will not be built and
+  the rail is deprecated in docs. Entity/edge cards are THE vector layer.
+- Facades via `_enable_memory_schema_0950_facade` (11 objects; re-run
+  `enable_memory_schema()` — object_count 134 → 145). New regression test
+  `semantic_entity` (cards, queue, worker protocol incl. hash skip +
+  generation race, jumps, arm-3 fix, span accretion, delete purge);
+  re-baselined `catalog` (152 → 154 tables), enablement/ingestion counts,
+  `load` version pins.
+- Deferred to 0.96.0+: `services/maludb-embedd` daemon,
+  `maludb_memory_query` front door + `maludb_resolve_subject` ladder,
+  embedding-status introspection, ANN over `malu$object_embedding`, MIST
+  empirical eval.
+
+## 0.94.0
 
 Episodes become a type of subject ("a standup meeting is an event"). The
 SVPOR subject is now the episode's graph identity; `malu$episode_object`
