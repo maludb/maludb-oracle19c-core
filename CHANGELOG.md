@@ -5,6 +5,53 @@ All notable changes to MaluDB land here. The format follows
 versions correspond to the extension migration chain
 (`maludb_core--X.Y--X.Z.sql`) plus a release tag.
 
+## Unreleased — 0.94.0
+
+Episodes become a type of subject ("a standup meeting is an event"). The
+SVPOR subject is now the episode's graph identity; `malu$episode_object`
+stays as the temporal payload sidecar (indexed `occurred_at`/`occurred_until`,
+`payload_jsonb`, lifecycle). Design locked 2026-06-07.
+
+- **Identity**: every episode row carries `subject_id` — a composite tenant
+  FK to `malu$svpor_subject` with `ON DELETE CASCADE` (deleting the subject
+  is the canonical delete path; the body and its MDO children follow). A
+  `BEFORE INSERT` trigger mints the subject for **every** insert path
+  (`register_episode`, the writable `maludb_episode` view, the ingest);
+  an `AFTER DELETE` trigger removes the subject on direct body deletes
+  (kept, with a WARNING, if other references still pin it).
+- **Typing**: the minted subject's `subject_type` is the episode kind
+  itself (`standup_meeting`, `deployment`, …). Kinds are auto-registered
+  in the global `malu$svpor_subject_type` picker (`system_defined=false`);
+  existing `malu$episode_type` entries and in-use kinds are seeded.
+- **Naming**: canonical name is `<title> (YYYY-MM-DD)` (UTC date of
+  `occurred_at`), falling back to `<title> [#<episode_id>]` without a
+  timestamp or on a same-day collision. The raw title is kept as an alias.
+- **Migration**: existing episodes are backfilled; `svpor_statement` edges
+  and `svpor_attribute` rows addressed as `('episode_object', id)` are
+  rewritten to `('subject', subject_id)` with identity-collision merging
+  and edge-attribute re-pointing (ghost endpoints are left untouched; the
+  CHECK constraints still accept `'episode_object'`).
+- **Facades**: `maludb_episode` gains `subject_id` (writable) and
+  `canonical_name` (read-only) columns and stays writable;
+  `maludb_episode_with_attributes` is rebuilt over the new shape and now
+  bundles the **subject's** attributes. `episode_get()` reads both
+  addressing forms and exposes the identity under a `subject` key.
+  Upgraded tenant schemas pick up the new view shape by re-running
+  `maludb_core.enable_memory_schema()` (the established convention — an
+  extension script cannot replace tenant-owned facade objects); the
+  table-level fold is fully active immediately after the migration.
+- **BREAKING — ingest contract**: `maludb_memory_ingest_extraction` now
+  **rejects** the `episodes[]` section with a clear error (a stale
+  extractor fails fast instead of silently dropping events). Events are
+  `subjects[]` entries carrying `occurred_at`/`occurred_until` (+ optional
+  `description`); the sidecar is created automatically and dedup stays
+  `(kind, title, occurred_at)`. Event keys resolve to **subject** endpoints
+  in `edges[]` and may now participate in `relationships[]`. The report
+  drops the `episode_attributes` counter (event attributes are node
+  attributes). The API server must move in lockstep — see
+  `docs/memory-extraction-json-contract.md` and
+  `docs/extraction-prompt-gpt-4o.md`, both revised with this release.
+
 ## v4.2.0 — 2026-06-06
 
 The extension default_version advances to 0.93.0, a **repair release** for the

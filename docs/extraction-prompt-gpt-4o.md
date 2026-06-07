@@ -1,17 +1,23 @@
 # GPT-4o memory-extraction prompt (for the API server)
 
 > Produces the JSON object consumed by `maludb_memory_ingest_extraction(...)`
-> (contract: `docs/memory-extraction-json-contract.md`, as built in 0.92.0).
+> (contract: `docs/memory-extraction-json-contract.md`, **0.94.0 revision**).
 > The API server calls GPT-4o with the SYSTEM prompt below + a USER message
 > built from the text, the hints, and the schema's current known subjects/verbs,
 > then passes the model's JSON straight into the ingest facade.
+>
+> **BREAKING vs the 0.92.0 prompt:** there is no `episodes[]` section any more
+> (the ingest rejects it). Events are `subjects[]` entries carrying
+> `occurred_at` / `occurred_until`. Deploy this prompt and the 0.94.0 extension
+> together.
 
 ## Integration (API server)
 - Model `gpt-4o`; `temperature: 0.1`; `response_format: { "type": "json_object" }`
   (or, stricter, a JSON-schema structured output — see end).
 - Inject the tenant's current canonical subjects/verbs as `KNOWN_SUBJECTS` /
   `KNOWN_VERBS` (read from `maludb_subject` / `maludb_verb`) so the model reuses
-  them and does not mint duplicates.
+  them and does not mint duplicates. Event subjects appear there with dated
+  canonical names like `"Oracle 21c upgrade (2026-03-30)"`.
 - The model does **not** emit a `document` block — it references the source text
   as `"$source"`. The API server supplies the document itself: either pass a
   `document` block when calling the facade, or upload the text first and call
@@ -33,8 +39,8 @@ supported by the TEXT or the HINTS. Do not invent details.
 OUTPUT RULES
 - Output ONLY one JSON object. No prose, no markdown, no code fences.
 - Use only the fields defined below. Omit any field you have no value for.
-- Give every subject and episode a unique "key": a short lowercase slug
-  (e.g. "oracle21c"). Edges and relationships refer to entities by that key.
+- Give every subject a unique "key": a short lowercase slug (e.g. "oracle21c").
+  Edges and relationships refer to entities by that key.
 - Reference the source text itself with the reserved token "$source".
 
 RESOLVE AGAINST KNOWN ENTITIES (do not create duplicates)
@@ -42,6 +48,9 @@ RESOLVE AGAINST KNOWN ENTITIES (do not create duplicates)
   HINT refers to one of them (by name or an obvious synonym), reuse its EXACT
   canonical name as "name" and add the surface form to "aliases". Only create a
   new subject when the entity is genuinely absent from KNOWN_SUBJECTS.
+- Past events appear in KNOWN_SUBJECTS with a date suffix, e.g.
+  "Oracle 21c upgrade (2026-03-30)". If the TEXT refers to that same
+  occurrence, reuse that EXACT dated name.
 - KNOWN_VERBS lists existing canonical verbs; prefer them.
 
 VERBS ARE SMALL AND CANONICAL
@@ -50,32 +59,39 @@ VERBS ARE SMALL AND CANONICAL
 - Put tense / status / outcome / actor-form on the EDGE as attributes
   (e.g. status="completed"), NOT in the verb.
 
-EVENTS BECOME EPISODES
-- A discrete occurrence (an install, an upgrade, a meeting, an incident, a task)
-  is an "episode". Pick "kind" from: Meeting, Daily Standup, Review,
-  Retrospective, 1:1, Incident, Planning, Project, Task, Sprint. If none fit,
-  use "Incident" for unplanned events or "Task" for planned work.
-- Connect the episode to the things it involves with edges:
-  episode --<verb>--> subject (e.g. --upgrade--> the system),
-  person --performed--> episode, episode --generated_by--> "$source".
+EVENTS ARE SUBJECTS WITH A TIME
+- A discrete occurrence (an install, an upgrade, a meeting, an incident, a
+  task) is a SUBJECT whose "type" is the event kind and which carries
+  "occurred_at" (and "occurred_until" if it has an end). Pick "type" from:
+  meeting, daily_standup, review, retrospective, one_on_one, incident,
+  planning, project, task, sprint, deployment, maintenance_window. If none
+  fit, use "incident" for unplanned events or "task" for planned work.
+- "name" is a short title of the occurrence ("Oracle 21c upgrade"); do NOT
+  append the date yourself — the system adds it.
+- Add a one-line "description" when the TEXT supports it.
+- Connect the event to the things it involves with edges:
+  event --<verb>--> subject (e.g. --upgrade--> the system),
+  person --performed--> event, event --generated_by--> "$source".
+- Events may also appear in "relationships" (they are subjects).
 
 DATES AND TIMES
-- Normalize any date/time to an ISO-8601 string WITH timezone offset and put it
-  in a "value_timestamp" attribute (e.g. {"attr_name":"event_at",
-  "value_timestamp":"2026-03-30T21:00:00-05:00"}). Also keep the literal phrase
-  from the TEXT in a companion text attribute (e.g. {"attr_name":"event_at_text",
-  "value_text":"9 PM EST"}). If a weekday and an explicit date disagree, trust
-  the explicit date and keep the literal text.
+- Normalize any date/time to an ISO-8601 string WITH timezone offset. The
+  event's own time goes in its "occurred_at"/"occurred_until" fields; other
+  times go in "value_timestamp" attributes (e.g. {"attr_name":"event_at",
+  "value_timestamp":"2026-03-30T21:00:00-05:00"}). Also keep the literal
+  phrase from the TEXT in a companion text attribute (e.g.
+  {"attr_name":"occurred_at_text","value_text":"9 PM EST"}). If a weekday and
+  an explicit date disagree, trust the explicit date and keep the literal text.
 
 HINTS
 - HINTS is a list of context entities that apply to the whole TEXT even if not
   named in it (the project, the person doing the work, the data center, etc.),
   each as {"subject-type": "...", "subject-name": "..."}.
 - For each hint: create (or reuse from KNOWN_SUBJECTS) that subject, and connect
-  the main episode/subject to it with the appropriate edge:
-    project       -> episode --part_of--> project
-    person        -> person  --performed--> episode
-    location/equipment/data center -> episode --located_in--> that subject
+  the main event/subject to it with the appropriate edge:
+    project       -> event --part_of--> project
+    person        -> person --performed--> event
+    location/equipment/data center -> event --located_in--> that subject
     organization  -> subject --belongs_to--> organization
   Use your judgment for other hint types; prefer a small canonical verb.
 
@@ -86,23 +102,18 @@ SCHEMA  (every section is optional; emit only what the TEXT/HINTS support)
     { "key": "<slug>",                      // REQUIRED
       "name": "<canonical name>",           // REQUIRED
       "type": "<subject type>",             // person | software | project | organization |
-                                            //   equipment | network | event | process |
-                                            //   workflow | time_period | other
+                                            //   equipment | network | process | workflow |
+                                            //   time_period | other — or an EVENT KIND
+                                            //   (meeting, incident, deployment, ...)
+      "occurred_at": "<ISO-8601±tz>",       // EVENTS ONLY — what makes it an event
+      "occurred_until": "<ISO-8601±tz>",    // EVENTS ONLY, optional end
+      "description": "<one line>",          // EVENTS ONLY, optional
       "aliases": ["<surface form>", ...],
       "attributes": [ <attribute>, ... ],   // properties of the NODE
       "ref": { "source": "...", "entity": "...", "key": "..." } }  // external system pointer
   ],
   "verbs": [                                 // optional; only to set aliases/type
     { "name": "upgrade", "type": "updated", "aliases": ["upgraded"] }
-  ],
-  "episodes": [
-    { "key": "<slug>",                      // REQUIRED
-      "kind": "<episode kind>",             // REQUIRED (see list above)
-      "title": "<short title>",             // REQUIRED
-      "summary": "<one line>",
-      "occurred_at": "<ISO-8601±tz>",
-      "occurred_until": "<ISO-8601±tz>",
-      "attributes": [ <attribute>, ... ] }
   ],
   "edges": [
     { "subject": "<key | $source>",         // REQUIRED
@@ -114,7 +125,7 @@ SCHEMA  (every section is optional; emit only what the TEXT/HINTS support)
       "source_span": "<verbatim span from TEXT>",
       "confidence": 0.0-1.0 }
   ],
-  "relationships": [                         // subject<->subject only
+  "relationships": [                         // subject<->subject (events included)
     { "from": "<subject key>", "to": "<subject key>",
       "relationship_type": "depends_on|owns|reports_to|located_in|member_of|...",
       "valid_from": "<ISO-8601±tz>", "valid_to": "<ISO-8601±tz>" }
@@ -142,10 +153,8 @@ OUTPUT:
     { "key": "oracle21c", "name": "Oracle Database 21c", "type": "software", "aliases": ["Oracle 21c"] },
     { "key": "drajeo", "name": "Drajeo", "type": "project" },
     { "key": "ed", "name": "Ed", "type": "person" },
-    { "key": "dceast", "name": "DC-East datacenter", "type": "equipment" }
-  ],
-  "episodes": [
-    { "key": "upg", "kind": "Task", "title": "Oracle 21c upgrade",
+    { "key": "dceast", "name": "DC-East datacenter", "type": "equipment" },
+    { "key": "upg", "name": "Oracle 21c upgrade", "type": "task",
       "occurred_at": "2026-03-30T21:00:00-05:00",
       "attributes": [ { "attr_name": "occurred_at_text", "value_text": "9 PM EST" } ] }
   ],
@@ -173,7 +182,8 @@ HINTS:
 {{hints_json}}            // e.g. [{"subject-type":"project","subject-name":"Drajeo"}]
 
 KNOWN_SUBJECTS:
-{{known_subjects_json}}   // e.g. [{"name":"Oracle Database 21c","type":"software"}]
+{{known_subjects_json}}   // e.g. [{"name":"Oracle Database 21c","type":"software"},
+                          //       {"name":"Oracle 21c upgrade (2026-03-30)","type":"task"}]
 
 KNOWN_VERBS:
 {{known_verbs_json}}      // e.g. ["upgrade","install","attended"]   (may be [])
@@ -184,7 +194,6 @@ KNOWN_VERBS:
 ## Optional: enforce with Structured Outputs
 For maximum reliability use `response_format: { "type": "json_schema", "json_schema": { … } }`
 instead of plain JSON mode, with a schema mirroring the SCHEMA block above
-(top-level object; `subjects/verbs/episodes/edges/relationships` arrays; the
-shared `attribute` definition; `additionalProperties:false`). Ask and I'll
-generate the full JSON Schema document to drop into the API call.
-```
+(top-level object; `subjects/verbs/edges/relationships` arrays; the shared
+`attribute` definition; `additionalProperties:false`). Ask and I'll generate
+the full JSON Schema document to drop into the API call.

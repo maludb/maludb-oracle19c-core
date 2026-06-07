@@ -14,8 +14,8 @@ provision PostgreSQL manually.
 
 | | |
 |---|---|
-| Version | **0.93.0** (extension) — latest release tag `v4.2.0` shipped extension 0.93.0 on 2026-06-06 (memory-model episodes/attributes, vector compartments, in-database model gateway, link helpers, one-call extraction ingest, derivation-ledger repair). V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
-| Test suite | **87 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
+| Version | **0.94.0** (extension) — episodes folded into subjects: every episode is a typed event subject (`subject_type` = the episode kind, dated canonical names) with the temporal body as a sidecar; **BREAKING** extraction-ingest contract (`episodes[]` removed — events are `subjects[]` entries with `occurred_at`; see `docs/memory-extraction-json-contract.md`). Latest release tag `v4.2.0` shipped extension 0.93.0 on 2026-06-06. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
+| Test suite | **88 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
 | Drivers | Python, Node.js, PHP, C — all four validated against the live extension |
 | External services | `maludb_modeld` (model gateway) + `maludb_mc2dbd` (database MCP listener) + `mcp-broker` (external-tool MCP broker) + `maludb-restd` (V3 REST gateway) + `maludb-realtimed` (V3 SSE event stream) + `maludb-pageindexd` (V4 PageIndex / ChatIndex builder) |
 | Roadmap | `requirements.md` §9 Stages 1–16+ shipped through V4 GA — see [`version4-pageindex-plan.md`](version4-pageindex-plan.md) |
@@ -80,7 +80,17 @@ sudo scripts/maludb-bootstrap
 sudo -u postgres createdb mydb
 sudo -u postgres psql -d mydb -c "CREATE EXTENSION maludb_core CASCADE"
 
-# 3. Walk through the first scenario.
+# 3. VERIFY the version before going further. CREATE EXTENSION installs
+#    whatever default_version the host's extension files declare — if a
+#    stale build was ever installed on this host, you silently get an old
+#    version and later steps fail with "relation ... does not exist".
+sudo -u postgres psql -d mydb -tAc "SELECT maludb_core.maludb_core_version()"
+#    Expected: the version in maludb_core.control of the checkout you
+#    installed from (0.94.0 for this tree). If it prints something older:
+#      sudo make -C <this-checkout> install
+#      sudo -u postgres psql -d mydb -c "ALTER EXTENSION maludb_core UPDATE"
+
+# 4. Walk through the first scenario.
 psql -d mydb -f examples/01-ingest-to-replay.sql
 ```
 
@@ -90,6 +100,10 @@ MaluDB does not modify ordinary PostgreSQL schemas automatically. To opt a
 schema into schema-local memory views:
 
 ```sql
+-- Run this connected to the database where maludb_core is installed
+-- (e.g. `psql -d mydb` or `\c mydb`). The extension is per-database:
+-- running this from the default `postgres` database fails with
+-- ERROR: schema "maludb_core" does not exist.
 CREATE USER zozocal;
 GRANT maludb_user TO zozocal;
 CREATE SCHEMA zozocal AUTHORIZATION zozocal;
@@ -103,6 +117,39 @@ For read-only users, grant `maludb_read`. On fresh installs where the role name
 is available, `GRANT maludb TO app_user` is also a short alias for
 `GRANT maludb_user TO app_user`. Existing operator installs that already have a
 login role named `maludb` keep using `maludb_user` to avoid privilege confusion.
+
+### Upgrade an existing installation
+
+Upgrading is three steps, and **all three are per-host / per-database /
+per-schema respectively** — stopping early leaves the system in a mixed state:
+
+```bash
+# 1. PER HOST: install the new extension files (from this checkout).
+#    Build/install ONLY from the current checkout — an old working tree
+#    `make install`s the same filenames and silently downgrades
+#    default_version for every future CREATE EXTENSION on the host.
+cd <this-checkout> && git pull
+sudo make install PG_CONFIG=/usr/lib/postgresql/17/bin/pg_config
+
+# 2. PER DATABASE: update the extension in every database that has it.
+sudo -u postgres psql -d mydb -c "ALTER EXTENSION maludb_core UPDATE"
+sudo -u postgres psql -d mydb -tAc "SELECT maludb_core.maludb_core_version()"  # confirm
+
+# 3. PER TENANT SCHEMA: refresh the memory facades. A migration cannot
+#    replace tenant-owned views/functions (they are not extension members),
+#    so new or changed facade objects only appear after this re-run.
+sudo -u postgres psql -d mydb -c "SELECT * FROM maludb_core.enable_memory_schema('zozocal')"
+```
+
+To list the schemas that need step 3 in a database:
+
+```sql
+SELECT schema_name, enabled_version FROM maludb_core.malu$enabled_schema;
+```
+
+Schemas still showing the old `enabled_version` haven't been refreshed.
+`scripts/maludb-validate` checks that the installed extension version in the
+database matches the version the host's extension files declare.
 
 ### Connect from an application server
 
@@ -218,8 +265,6 @@ The project ships in stages (`requirements.md` §9):
 - **Stage 6 (broker)** ✅ — External MCP broker reference (`services/mcp-broker` v0.1.0).
 - **Stage 6 (drivers)** ✅ — C / Python / Node.js / PHP SDKs (v0.1.0 each). C SDK v0.2.0 (pool / skill / node wrappers) is a V3-SDK-01 follow-up.
 - **Stage 7** ✅ — Hardening: benchmarks, security review, docs, deb packaging, **public alpha tagged**.
-- **Stages 8–15 (Version 3)** 🚧 — Platform-ergonomics track: identity/secrets, REST gateway + CLI + SDK parity, durable queue + cron, verbatim source archive v1, realtime + presence, vector/retrieval polish, metrics + log drains + backup/PITR + preview envs + replicas.
-- **Stage 7** ✅ — Hardening: benchmarks, security review, docs, deb packaging, public alpha tagged.
 - **Stages 8–15 (Version 3)** ✅ — Platform-ergonomics track: identity/secrets, REST gateway + CLI + SDK parity, durable queue + cron, verbatim source archive v1, realtime + presence, vector/retrieval polish, metrics + log drains + backup/PITR + preview envs + replicas. Shipped as `v3.0.0` and `v3.1.0`.
 - **Stages 16+ (Version 4)** ✅ — PageIndex / ChatIndex as governed memory surfaces over the Verbatim Source Archive. Reachable through every external surface (SQL / MC2DB / REST / CLI / 4-language SDK). Shipped as `v4.0.0`. See [`version4-pageindex-plan.md`](version4-pageindex-plan.md).
 

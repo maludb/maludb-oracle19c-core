@@ -99,6 +99,37 @@ else
 fi
 
 # ---------------------------------------------------------------------
+# 2b. database version matches the host's extension files. A stale
+#     working tree's `make install` silently downgrades default_version
+#     for the whole host: fresh CREATE EXTENSION then lands on an old
+#     version, and upgraded vs fresh databases diverge ("relation ...
+#     does not exist" bugs). Catch the skew here.
+# ---------------------------------------------------------------------
+SHAREDIR=$(pg_config --sharedir 2>/dev/null || true)
+[ -d "${SHAREDIR}/extension" ] || SHAREDIR=/usr/share/postgresql/17
+CONTROL="${SHAREDIR}/extension/maludb_core.control"
+if [ -n "$EXTVER" ] && [ -r "$CONTROL" ]; then
+    HOSTVER=$(sed -n "s/^default_version *= *'\(.*\)'/\1/p" "$CONTROL")
+    if [ "$EXTVER" = "$HOSTVER" ]; then
+        ok "database version matches host extension files (${HOSTVER})"
+    else
+        ko "version skew: database has ${EXTVER}, host extension files declare ${HOSTVER} — run ALTER EXTENSION maludb_core UPDATE (db behind) or reinstall from the current checkout (host files stale)"
+    fi
+    # Per-tenant facades lag behind until re-enabled (a migration cannot
+    # replace tenant-owned objects). Surface schemas needing a refresh.
+    STALE_SCHEMAS=$(q "SELECT string_agg(schema_name || ' (' || enabled_version || ')', ', ')
+                         FROM maludb_core.malu\$enabled_schema
+                        WHERE enabled_version <> '${EXTVER}'" 2>/dev/null || true)
+    if [ -n "$STALE_SCHEMAS" ]; then
+        wn "memory schemas on an older facade version: ${STALE_SCHEMAS} — re-run maludb_core.enable_memory_schema(schema) for each"
+    else
+        ok "all memory-enabled schemas are on ${EXTVER}"
+    fi
+elif [ -n "$EXTVER" ]; then
+    wn "cannot read ${CONTROL} to cross-check the installed version"
+fi
+
+# ---------------------------------------------------------------------
 # 3. pgvector demo query works
 # ---------------------------------------------------------------------
 DEMO_OK=$(q "

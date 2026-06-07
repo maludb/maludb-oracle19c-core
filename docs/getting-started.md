@@ -28,6 +28,11 @@ To use MaluDB like a standard PostgreSQL schema, opt an application schema into
 the memory facades:
 
 ```sql
+-- Run this connected to the database where maludb_core is installed
+-- (`psql -d tutorial` or `\c tutorial`). The extension is per-database:
+-- running this from the default `postgres` database "succeeds" through the
+-- GRANT/SET steps and then fails with
+-- ERROR: schema "maludb_core" does not exist.
 CREATE USER zozocal;
 GRANT maludb_user TO zozocal;
 CREATE SCHEMA zozocal AUTHORIZATION zozocal;

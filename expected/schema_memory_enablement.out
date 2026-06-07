@@ -186,7 +186,7 @@ SET search_path TO sme_a, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-132
+134
 (1 row)
 SELECT object_count AS enable_refresh_object_count
 FROM maludb_core.enable_memory_schema();
@@ -196,8 +196,10 @@ drop cascades to view sme_a.maludb_stakeholder
 drop cascades to view sme_a.maludb_person
 drop cascades to view sme_a.maludb_subject_with_attributes
 NOTICE:  drop cascades to view sme_a.maludb_document_with_attributes
+NOTICE:  drop cascades to view sme_a.maludb_episode_with_attributes
+NOTICE:  view "maludb_episode_with_attributes" does not exist, skipping
 enable_refresh_object_count
-132
+134
 (1 row)
 SELECT bool_and(c.oid IS NOT NULL) AS enabled_facades_created
 FROM unnest(ARRAY[
@@ -884,7 +886,6 @@ drop cascades to function sme_a.maludb_svpor_statement_create(text,bigint,bigint
 drop cascades to function sme_a.maludb_svpor_statement_close(bigint,timestamp with time zone)
 drop cascades to function sme_a.maludb_svpor_statement_delete(bigint)
 drop cascades to function sme_a.maludb_svpor_statement_set_provenance(bigint,text)
-drop cascades to view sme_a.maludb_episode
 drop cascades to function sme_a.maludb_episode_get(bigint)
 drop cascades to function sme_a.maludb_register_episode(text,text,text,jsonb,timestamp with time zone,timestamp with time zone,text,text)
 drop cascades to view sme_a.maludb_attribute_template
@@ -897,10 +898,11 @@ drop cascades to function sme_a.maludb_svpor_attribute_create(text,bigint,text,t
 drop cascades to function sme_a.maludb_attributes_apply(text,bigint,jsonb)
 drop cascades to function sme_a.maludb_attributes(text,bigint)
 drop cascades to function sme_a.maludb_object_get(text,bigint)
-drop cascades to view sme_a.maludb_episode_with_attributes
 drop cascades to function sme_a.maludb_reference_view_sql(text,text,text,text,text,text,text,boolean,text[],text[])
 drop cascades to function sme_a.maludb_create_reference_view(text,text,text,text,text,text,text,boolean,text[],text[],boolean)
 drop cascades to view sme_a.maludb_edge
+drop cascades to function sme_a.maludb_graph_neighbors(text,bigint,text,text[])
+drop cascades to function sme_a.maludb_graph_walk(text,bigint,integer,text,text[])
 and 29 other objects (see server log for list)
 DROP SCHEMA sme_b CASCADE;
 DO $body$
