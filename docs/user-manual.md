@@ -34,10 +34,10 @@ MaluDB is a memory DBMS built on PostgreSQL 17. It is delivered as:
 
 | | |
 |---|---|
-| Extension `default_version` | **0.93.0** (memory-model episodes/attributes, vector compartments, in-database model gateway, link helpers, one-call extraction ingest, derivation-ledger repair; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
-| Last release tag | **`v4.2.0`** at extension `0.93.0` (memory model + extraction ingest + derivation-ledger repair, 2026-06-06) |
+| Extension `default_version` | **0.95.0** (semantic spine: entity-card embeddings + dirty queue + opt-in `similar_to` traversal jumps, chunk rail frozen — plus 0.94.0 episodes-as-subjects; earlier: memory-model episodes/attributes, vector compartments, in-database model gateway, link helpers, one-call extraction ingest, derivation-ledger repair; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
+| Last release tag | **`v4.3.0`** at extension `0.95.0` (semantic entity embeddings + episodes-as-subjects, 2026-06-07) |
 | Supported PostgreSQL majors | 16, 17, 18 (PG 17 is the blocking CI target) |
-| Test suite | 87 `pg_regress` targets on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
+| Test suite | 89 `pg_regress` targets on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
 | Shipped services | `maludb_modeld`, `maludb_mc2dbd`, `mcp-broker`, `maludb-restd`, `maludb-realtimed`, `maludb-pageindexd` |
 | Shipped SDKs | C (`libmaludb` v0.2.0 — pool/skill/node wrappers), Python, Node.js, PHP (`maludb/client` via Composer) |
 | Shipped CLI | `maludb` v0.1.0 (V3-CLI-01) |

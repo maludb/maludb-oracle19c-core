@@ -1,3 +1,22 @@
+maludb (0.95.0-1) noble; urgency=medium
+
+  * v4.3.0 release. Extension default_version 0.95.0;
+    89/89 pg_regress on PostgreSQL 17.
+  * Semantic spine (0.95.0): subjects/verbs/edges become the vector
+    layer — deterministic in-DB entity cards + trigger-fed dirty
+    queue + external embed worker landing in the object-embedding
+    rail; materialized similar_to traversal jumps (opt-in via
+    rel_filter); unified edge view gains the ingested subject
+    relationships (gap fix); statement source_spans[] accretion.
+    Chunk-compartment rail frozen/deprecated; extraction JSON
+    contract unchanged.
+  * Episodes as subjects (0.94.0): every episode is a typed event
+    subject with the temporal body as a sidecar; BREAKING ingest
+    contract (episodes[] removed — events are subjects[] entries
+    with occurred_at).
+
+ -- Edward Honour <ed@maludb.org>  Sun, 07 Jun 2026 00:00:00 +0000
+
 maludb (0.93.0-1) noble; urgency=medium
 
   * v4.2.0 release. Extension default_version 0.93.0;

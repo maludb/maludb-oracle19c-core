@@ -5,7 +5,14 @@ All notable changes to MaluDB land here. The format follows
 versions correspond to the extension migration chain
 (`maludb_core--X.Y--X.Z.sql`) plus a release tag.
 
-## Unreleased — 0.95.0
+## v4.3.0 — 2026-06-07
+
+The extension default_version advances to **0.95.0**; this tag ships both
+0.94.0 (episodes become typed event subjects — see its section below) and
+0.95.0. 89/89 pg_regress on PostgreSQL 17; fresh-install ≡ 0.1.0→0.95.0
+upgrade verified via the catalog snapshot gate.
+
+### 0.95.0
 
 The "semantic spine": subjects, verbs and edges (SVO statements) become the
 vector layer. Embeddings are rendered from **merged** database state by
@@ -64,7 +71,7 @@ jumps**. Design: `docs/semantic-entity-embeddings.md`. Decisions locked
   embedding-status introspection, ANN over `malu$object_embedding`, MIST
   empirical eval.
 
-## 0.94.0
+### 0.94.0
 
 Episodes become a type of subject ("a standup meeting is an event"). The
 SVPOR subject is now the episode's graph identity; `malu$episode_object`
