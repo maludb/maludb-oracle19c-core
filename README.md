@@ -226,7 +226,7 @@ not work over TCP; remote logins use `scram-sha-256`. The `app`
 user created above has no password yet:
 
 ```bash
-sudo -u postgres psql -c "ALTER USER app PASSWORD '%change_on_install#'"
+sudo -u postgres psql -c "ALTER USER app PASSWORD '#change_on_install#'"
 ```
 
 ### Upgrade an existing installation
@@ -318,7 +318,7 @@ sudo ufw allow from 192.168.100.0/24 to any port 5432 proto tcp
 **Verify from the application server** before wiring up a driver:
 
 ```bash
-PGPASSWORD='choose-a-password' psql -h <server-address> -p 5432 -U app -d maludb \
+PGPASSWORD='#change_on_install#' psql -h <server-address> -p 5432 -U app -d maludb \
     -c 'select current_user, current_database()'
 ```
 
