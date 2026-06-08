@@ -117,28 +117,53 @@ You should see: the ingest→replay walkthrough stream by, ending with
 
 ### Enable MaluDB memory in an application schema
 
-MaluDB does not modify ordinary PostgreSQL schemas automatically. To opt a
-schema into schema-local memory views:
+MaluDB does not modify ordinary PostgreSQL schemas automatically — you opt a
+schema in explicitly. The steps below create an application user named `app`
+with a schema of the same name; substitute your application's name in both
+places. All commands target the `maludb` database from the Quickstart: the
+extension is per-database, so pointing them at the default `postgres`
+database fails with `ERROR: schema "maludb_core" does not exist`.
 
-```sql
--- Run this connected to the database where maludb_core is installed
--- (e.g. `psql -d maludb` or `\c maludb`). The extension is per-database:
--- running this from the default `postgres` database fails with
--- ERROR: schema "maludb_core" does not exist.
--- `app` below is your application's user and schema — name it after
--- your application.
-CREATE USER app;
-GRANT maludb_user TO app;
-CREATE SCHEMA app AUTHORIZATION app;
-SET ROLE app;
-SET search_path TO app, maludb_core, public;
-SELECT * FROM maludb_core.enable_memory_schema();
-SELECT * FROM maludb_subject;
+**1. Create the application user and grant it MaluDB access.**
+
+```bash
+sudo -u postgres psql -d maludb -c "CREATE USER app" -c "GRANT maludb_user TO app"
 ```
 
-You should see: `enable_memory_schema()` returns one row —
-`(app, 0.95.0, 145)` — and `maludb_subject` returns an empty result
-(0 rows) until you ingest your first memory.
+You should see: `CREATE ROLE` then `GRANT ROLE`.
+
+**2. Create the application schema, owned by that user.**
+
+```bash
+sudo -u postgres psql -d maludb -c "CREATE SCHEMA app AUTHORIZATION app"
+```
+
+You should see: `CREATE SCHEMA`.
+
+**3. Enable the memory facades in the schema.**
+
+```bash
+sudo -u postgres psql -d maludb -c "SELECT * FROM maludb_core.enable_memory_schema('app')"
+```
+
+You should see one row:
+
+```
+ schema_name | enabled_version | object_count
+-------------+-----------------+--------------
+ app         | 0.95.0          |          145
+```
+
+**4. Verify the schema works as the application user.**
+
+```bash
+sudo -u postgres psql -d maludb -c "SET ROLE app; SET search_path TO app, maludb_core, public; SELECT * FROM maludb_subject"
+```
+
+You should see: an empty subject list — `(0 rows)` — the schema is ready
+for its first ingest. Your application connects as `app` with
+`search_path = app, maludb_core, public` and uses the schema-local
+`maludb_*` views and functions from there.
 
 For read-only users, grant `maludb_read`. On fresh installs where the role name
 is available, `GRANT maludb TO app_user` is also a short alias for
