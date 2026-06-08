@@ -61,6 +61,17 @@ override_dh_auto_install:
 	                scripts/maludb-gpu-check \
 	                scripts/maludb-model-runtime-check \
 	    $(CURDIR)/debian/tmp/usr/share/maludb/scripts/
+	# End-to-end SQL example scenarios into the metapackage's share
+	# path so `apt install maludb` lands them where the Quickstart's
+	# `cd /usr/share/maludb` expects (step 5 runs examples/01-...sql).
+	# Routed into the `maludb` metapackage via debian/maludb.install.
+	# The mist-e2e/ tree is a version-pinned dev harness — source-only.
+	install -d $(CURDIR)/debian/tmp/usr/share/maludb/examples
+	install -m 0644 examples/01-ingest-to-replay.sql \
+	                examples/02-skill-execution.sql \
+	                examples/03-pool-promotion.sql \
+	                examples/04-local-node-sync.sql \
+	    $(CURDIR)/debian/tmp/usr/share/maludb/examples/
 
 override_dh_installsystemd:
 	# Stage the systemd unit with paths + user adjusted for the

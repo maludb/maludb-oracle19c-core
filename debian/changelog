@@ -20,7 +20,12 @@ maludb (0.95.0-1) noble; urgency=medium
     maludb-mc2dbd. Refreshed the postgresql-17-maludb-core package
     description (was stuck at the 0.40.0 feature list); declare the
     intentionally-unshipped staged mc2dbd unit in debian/not-installed
-    so dh_missing passes.
+    so dh_missing passes. The metapackage also ships the four
+    numbered end-to-end SQL example scenarios under
+    /usr/share/maludb/examples/, so the README Quickstart's
+    `apt install maludb` → `cd /usr/share/maludb` flow is
+    self-contained (the version-pinned mist-e2e harness stays
+    source-only).
 
  -- Edward Honour <ed@maludb.org>  Sun, 07 Jun 2026 00:00:00 +0000
 

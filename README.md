@@ -6,8 +6,8 @@ extensions on **Ubuntu 24.04 LTS**, with **PostgreSQL 17** (PGDG) as
 the foundation.
 
 The project is a single managed installation: `sudo apt install maludb`
-(forthcoming) gives you PostgreSQL 17 + pgvector + pgaudit + pg_partman
-+ the `maludb_core` extension wired together. Operators don't have to
+gives you PostgreSQL 17 + pgvector + pgaudit + pg_partman + the
+`maludb_core` extension wired together. Operators don't have to
 provision PostgreSQL manually.
 
 **New here?** Start with the [executive summary](executive-summary.md) —
@@ -79,14 +79,19 @@ A small number of invariants run through the whole system:
 Each block below is one step: copy it, run it, and check the result
 against the line underneath before moving on.
 
-**1. Install (Ubuntu 24.04 build host).**
+**1. Install (Ubuntu 24.04 host).**
 
 ```bash
-sudo scripts/maludb-bootstrap
+sudo apt install maludb
+cd /usr/share/maludb
 ```
 
-You should see: the bootstrap finishes with a `Next steps:` checklist
-(optional services, post-install validator, listener smoke test).
+You should see: `apt` resolve and install PostgreSQL 17 + pgvector +
+pgaudit + pg_partman and the `maludb_core` extension, then a shell now
+sitting in `/usr/share/maludb` — the directory the remaining steps run
+from (it ships the `examples/` scripts step 5 uses). Building from source
+instead? Run `sudo scripts/maludb-bootstrap` from a checkout — see
+[docs/install.md](docs/install.md).
 
 **2. Create a database and install the extension.**
 
@@ -122,11 +127,18 @@ You should see exactly: `0.95.0`
 
 **5. Walk through the first scenario (optional).**
 
-This script connects to the target database and tests a series of commands. Make
-sure you replace 'maludb' with your database name if necessary.
+This script connects to the target database and runs a series of commands.
+Replace 'maludb' with your database name if necessary.
+
+Run it as `postgres`, like the steps above. The `examples/` scripts ship
+under `/usr/share/maludb` (where step 1 left you), a world-readable system
+path, so the `postgres` user can read them with `-f`. Don't run a bare
+`psql`: that logs in peer-auth as your shell user, which maps to the
+NOLOGIN `maludb` group role (`FATAL: role "maludb" is not permitted to log
+in`).
 
 ```bash
-psql -d maludb -f examples/01-ingest-to-replay.sql
+sudo -u postgres psql -d maludb -f examples/01-ingest-to-replay.sql
 ```
 
 You should see: the ingest→replay walkthrough stream by, ending with
@@ -209,6 +221,14 @@ is available, `GRANT maludb TO app_user` is also a short alias for
 `GRANT maludb_user TO app_user`. Existing operator installs that already have a
 login role named `maludb` keep using `maludb_user` to avoid privilege confusion.
 
+**6. Give the application role a password.** Peer authentication does
+not work over TCP; remote logins use `scram-sha-256`. The `app`
+user created above has no password yet:
+
+```bash
+sudo -u postgres psql -c "ALTER USER app PASSWORD '%change_on_install#'"
+```
+
 ### Upgrade an existing installation
 
 Upgrading is three steps, and **all three are per-host / per-database /
@@ -271,7 +291,7 @@ not work over TCP; remote logins use `scram-sha-256`. The `app`
 user created above has no password yet:
 
 ```bash
-sudo -u postgres psql -c "ALTER USER app PASSWORD 'choose-a-password'"
+sudo -u postgres psql -c "ALTER USER app PASSWORD '#change_on_install#'"
 ```
 
 **3. Allow the client in `pg_hba.conf`.** Add a `host` line to
