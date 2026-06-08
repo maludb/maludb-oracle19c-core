@@ -17,5 +17,5 @@ maludb-mc2dbd/
 # Generated systemd unit (rewritten paths) — see debian/rules.
 maludb-mc2dbd.service
 
-# debhelper "not installed" report.
-not-installed
+# Per-package staging tree for the metapackage (dh_install).
+maludb/

@@ -44,12 +44,10 @@ Depends: ${shlibs:Depends},
 Description: MaluDB memory core — PostgreSQL 17 extension
  MaluDB is a memory DBMS for long-term institutional memory, human-AI
  knowledge sharing, and contextual recall. This package provides the
- maludb_core extension (chain through 0.40.0):
+ maludb_core extension (migration chain through 0.95.0):
  .
   * Stage 1 schema + MC2DB tool registry with four implementation_type
     dispatchers.
-  * Compartmentalized vector substrate (BYTEA float32, C top-K heap)
-    + LLM-role / row-level-security surface.
   * Stage 2 memory object model: source packages, claims, facts,
     episode objects, memory detail objects, relationship edges,
     derivation ledger.
@@ -63,6 +61,16 @@ Description: MaluDB memory core — PostgreSQL 17 extension
   * Stage 6 local-node sync protocol, model registry with blue-green
     indexes + dual-space routing + adapter alignment + local-model
     capability negotiation, and an advanced MC2DB tool surface.
+  * V3 platform (Stages 8-15): auth/secret store, REST endpoint
+    registry, durable queue, cron scheduler, verbatim source archive,
+    realtime events + presence, metrics/log-drain/backup manifests.
+  * V4 (Stages 16+): PageIndex / ChatIndex tree-of-summaries catalogs
+    with LLM-guided descent over the source archive.
+  * Memory graph (0.75.0-0.95.0): typed subjects/verbs, SVO statement
+    edges, polymorphic attributes + templates, episodes as typed event
+    subjects, one-call JSON extraction ingest, and the semantic spine -
+    entity-card embeddings with a trigger-fed dirty queue and opt-in
+    similarity jumps in graph traversal.
 
 Package: postgresql-18-maludb-core
 Architecture: any
@@ -97,3 +105,21 @@ Description: MaluDB MC2DB listener (MCP-over-HTTPS sidecar)
  ProtectHome=read-only, RestrictAddressFamilies). Listens on
  127.0.0.1:5329 by default; bind/cert/token configured under
  /etc/maludb/maludb-mc2dbd.conf.
+
+Package: maludb
+Architecture: all
+Depends: ${misc:Depends},
+         postgresql-17-maludb-core (>= ${source:Version})
+Recommends: maludb-mc2dbd (>= ${source:Version})
+Description: memory DBMS for long-term institutional memory (metapackage)
+ Single managed installation of the MaluDB stack: pulls in PostgreSQL 17
+ with pgvector, pgaudit and pg_partman plus the maludb_core extension
+ (via postgresql-17-maludb-core), and by default the MC2DB MCP listener
+ daemon (maludb-mc2dbd). Operators on a different PostgreSQL major can
+ install postgresql-16-maludb-core or postgresql-18-maludb-core
+ directly instead.
+ .
+ After installation, create the extension in a database:
+ .
+   sudo -u postgres createdb maludb
+   sudo -u postgres psql -d maludb -c "CREATE EXTENSION maludb_core CASCADE"
