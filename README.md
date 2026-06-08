@@ -5,11 +5,6 @@ knowledge sharing, and contextual recall. Built in **C** as PostgreSQL
 extensions on **Ubuntu 24.04 LTS**, with **PostgreSQL 17** (PGDG) as
 the foundation.
 
-The project is a single managed installation: `sudo apt install maludb`
-gives you PostgreSQL 17 + pgvector + pgaudit + pg_partman + the
-`maludb_core` extension wired together. Operators don't have to
-provision PostgreSQL manually.
-
 **New here?** Start with the [executive summary](executive-summary.md) —
 what MaluDB is, the memory model, and why retrieval is relational/graph-first
 with vector search reserved for the query classes that genuinely need it.
@@ -79,53 +74,22 @@ A small number of invariants run through the whole system:
 Each block below is one step: copy it, run it, and check the result
 against the line underneath before moving on.
 
-**1. Install (Ubuntu 24.04 host).**
+**1. Install (Ubuntu 24.04 build host).**
 
-MaluDB installs from its APT repository, which also pulls PostgreSQL 17 +
-pgvector + pgaudit + pg_partman from PGDG. Register both repositories
-once — without this, the install commands below fail with `E: Unable to
-locate package maludb`:
-
-```bash
-# PGDG — PostgreSQL 17 and the pgvector/pgaudit/pg_partman builds MaluDB needs.
-sudo apt install -y curl ca-certificates
-sudo install -d /usr/share/postgresql-common/pgdg
-sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-    -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
-https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release; echo $VERSION_CODENAME)-pgdg main" \
-    | sudo tee /etc/apt/sources.list.d/pgdg.list
-
-# MaluDB repository.
-sudo install -d -m 0755 /etc/apt/keyrings
-curl -fsSL https://repo.maludb.org/maludb-archive-keyring.asc \
-    | sudo gpg --dearmor -o /etc/apt/keyrings/maludb.gpg
-sudo tee /etc/apt/sources.list.d/maludb.sources >/dev/null <<'EOF'
-Types: deb
-URIs: https://repo.maludb.org
-Suites: noble
-Components: main
-Architectures: amd64
-Signed-By: /etc/apt/keyrings/maludb.gpg
-EOF
-```
-
-Then install:
+Clone the repository and run the bootstrap, which builds and installs the
+`maludb_core` PostgreSQL extension (PostgreSQL 17 from PGDG, plus pgvector,
+pgaudit, and pg_partman) from source:
 
 ```bash
-sudo apt update
-apt-cache policy maludb       # expect candidate 0.95.0-1 from repo.maludb.org
-sudo apt install maludb
-cd /usr/share/maludb
+git clone https://github.com/maludb/maludb-core
+cd maludb-core
+sudo scripts/maludb-bootstrap
 ```
 
-You should see: `apt update` now list `repo.maludb.org` alongside the PGDG
-and Ubuntu lines, `apt-cache policy` report a `0.95.0-1` candidate from
-`repo.maludb.org`, then the install pull in PostgreSQL 17 + pgvector +
-pgaudit + pg_partman and the `maludb_core` extension. The `cd` lands you
-in `/usr/share/maludb`, where the example scripts step 5 uses live.
-Building from source instead? Run `sudo scripts/maludb-bootstrap` from a
-checkout — see [docs/install.md](docs/install.md).
+You should see: the bootstrap finishes with a `Next steps:` checklist
+(optional services, post-install validator, listener smoke test). Run the
+remaining steps from this `maludb-core` checkout — that's where the
+`examples/` scripts step 5 uses live.
 
 **2. Create a database and install the extension.**
 
@@ -164,15 +128,16 @@ You should see exactly: `0.95.0`
 This script connects to the target database and runs a series of commands.
 Replace 'maludb' with your database name if necessary.
 
-Run it as `postgres`, like the steps above. The `examples/` scripts ship
-under `/usr/share/maludb` (where step 1 left you), a world-readable system
-path, so the `postgres` user can read them with `-f`. Don't run a bare
-`psql`: that logs in peer-auth as your shell user, which maps to the
-NOLOGIN `maludb` group role (`FATAL: role "maludb" is not permitted to log
-in`).
+Run it as `postgres`, like the steps above, and feed the file in over stdin
+(`<`) rather than with `-f`: your shell opens the script from your checkout,
+while `psql` connects as the superuser. Using `psql -d maludb -f …` directly
+fails two ways — bare `psql` logs in peer-auth as your shell user (which maps to
+the NOLOGIN `maludb` group role: `FATAL: role "maludb" is not permitted to log
+in`), and `sudo -u postgres psql -f …` can't read a file under your `0750` home
+directory.
 
 ```bash
-sudo -u postgres psql -d maludb -f examples/01-ingest-to-replay.sql
+sudo -u postgres psql -d maludb < examples/01-ingest-to-replay.sql
 ```
 
 You should see: the ingest→replay walkthrough stream by, ending with

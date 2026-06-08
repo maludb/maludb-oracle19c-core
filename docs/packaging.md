@@ -4,7 +4,7 @@ Five binary packages ship from a single `dpkg-buildpackage` invocation:
 
 | Package | Contents |
 |---|---|
-| `maludb` | Metapackage (`Architecture: all`) — the `sudo apt install maludb` entry point. Depends on `postgresql-17-maludb-core` (which pulls PostgreSQL 17 + pgvector + pgaudit + pg_partman) and recommends `maludb-mc2dbd`. Also ships the four end-to-end SQL example scenarios under `/usr/share/maludb/examples/`, so the README Quickstart's `cd /usr/share/maludb` step lands next to them. |
+| `maludb` | Metapackage (`Architecture: all`) — the `sudo apt install maludb` entry point. Depends on `postgresql-17-maludb-core` (which pulls PostgreSQL 17 + pgvector + pgaudit + pg_partman) and recommends `maludb-mc2dbd`. |
 | `postgresql-16-maludb-core` | The PGXS extension built for PostgreSQL 16. |
 | `postgresql-17-maludb-core` | The PGXS extension built for PostgreSQL 17. |
 | `postgresql-18-maludb-core` | The PGXS extension built for PostgreSQL 18. |
@@ -79,11 +79,7 @@ so after configuring `/etc/maludb/maludb-mc2dbd.conf`.
    `debian/maludb-mc2dbd.install`. Helper scripts
    (`maludb-validate`, `maludb-gpu-check`,
    `maludb-model-runtime-check`) land under
-   `/usr/share/maludb/scripts/` in the listener package. The four
-   numbered end-to-end SQL examples are staged into
-   `/usr/share/maludb/examples/` and routed into the `maludb`
-   metapackage via `debian/maludb.install` (the `mist-e2e/` dev
-   harness is version-pinned and stays source-only).
+   `/usr/share/maludb/scripts/` in the listener package.
 3. `override_dh_installsystemd` — rewrites the source systemd unit's
    path + user/group to match the Debian convention
    (`/usr/sbin/maludb_mc2dbd`, `maludb-mc2dbd` user with a
