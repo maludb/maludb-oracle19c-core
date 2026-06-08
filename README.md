@@ -81,17 +81,51 @@ against the line underneath before moving on.
 
 **1. Install (Ubuntu 24.04 host).**
 
+MaluDB installs from its APT repository, which also pulls PostgreSQL 17 +
+pgvector + pgaudit + pg_partman from PGDG. Register both repositories
+once — without this, the install commands below fail with `E: Unable to
+locate package maludb`:
+
 ```bash
+# PGDG — PostgreSQL 17 and the pgvector/pgaudit/pg_partman builds MaluDB needs.
+sudo apt install -y curl ca-certificates
+sudo install -d /usr/share/postgresql-common/pgdg
+sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release; echo $VERSION_CODENAME)-pgdg main" \
+    | sudo tee /etc/apt/sources.list.d/pgdg.list
+
+# MaluDB repository.
+sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://repo.maludb.org/maludb-archive-keyring.asc \
+    | sudo gpg --dearmor -o /etc/apt/keyrings/maludb.gpg
+sudo tee /etc/apt/sources.list.d/maludb.sources >/dev/null <<'EOF'
+Types: deb
+URIs: https://repo.maludb.org
+Suites: noble
+Components: main
+Architectures: amd64
+Signed-By: /etc/apt/keyrings/maludb.gpg
+EOF
+```
+
+Then install:
+
+```bash
+sudo apt update
+apt-cache policy maludb       # expect candidate 0.95.0-1 from repo.maludb.org
 sudo apt install maludb
 cd /usr/share/maludb
 ```
 
-You should see: `apt` resolve and install PostgreSQL 17 + pgvector +
-pgaudit + pg_partman and the `maludb_core` extension, then a shell now
-sitting in `/usr/share/maludb` — the directory the remaining steps run
-from (it ships the `examples/` scripts step 5 uses). Building from source
-instead? Run `sudo scripts/maludb-bootstrap` from a checkout — see
-[docs/install.md](docs/install.md).
+You should see: `apt update` now list `repo.maludb.org` alongside the PGDG
+and Ubuntu lines, `apt-cache policy` report a `0.95.0-1` candidate from
+`repo.maludb.org`, then the install pull in PostgreSQL 17 + pgvector +
+pgaudit + pg_partman and the `maludb_core` extension. The `cd` lands you
+in `/usr/share/maludb`, where the example scripts step 5 uses live.
+Building from source instead? Run `sudo scripts/maludb-bootstrap` from a
+checkout — see [docs/install.md](docs/install.md).
 
 **2. Create a database and install the extension.**
 
