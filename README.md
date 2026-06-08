@@ -90,15 +90,29 @@ You should see: the bootstrap finishes with a `Next steps:` checklist
 
 **2. Create a database and install the extension.**
 
+This script creates a database named maludb.  If you want a different
+name replace 'maludb' with your new database name. If you are installing
+MaluDb in an existing database, you can skip this step.
+
 ```bash
 sudo -u postgres createdb maludb
+```
+
+**3. Create the maludb_core extension in the target database.**
+
+If you are not installing in the 'maludb' database change it first.
+
+```bash
 sudo -u postgres psql -d maludb -c "CREATE EXTENSION maludb_core CASCADE"
 ```
 
 You should see: a few `NOTICE: installing required extension ...` lines
 (`vector`, `btree_gist`, `pg_trgm`, `pgcrypto`), then `CREATE EXTENSION`.
 
-**3. Verify the version before going further.**
+**4. Verify the version.**
+
+If you are not installing in the 'maludb' database change the database name 
+before verifying.
 
 ```bash
 sudo -u postgres psql -d maludb -tAc "SELECT maludb_core.maludb_core_version()"
@@ -106,7 +120,10 @@ sudo -u postgres psql -d maludb -tAc "SELECT maludb_core.maludb_core_version()"
 
 You should see exactly: `0.95.0`
 
-**4. Walk through the first scenario.**
+**5. Walk through the first scenario (optional).**
+
+This script connects to the target database and tests a series of commands. Make
+sure you replace 'maludb' with your database name if necessary.
 
 ```bash
 psql -d maludb -f examples/01-ingest-to-replay.sql
@@ -115,24 +132,40 @@ psql -d maludb -f examples/01-ingest-to-replay.sql
 You should see: the ingest→replay walkthrough stream by, ending with
 `example 01 done.`
 
-### Enable MaluDB memory in an application schema
+### Enable MaluDB memory in application schemas
 
-MaluDB does not modify ordinary PostgreSQL schemas automatically — you opt a
-schema in explicitly. The steps below create an application user named `app`
-with a schema of the same name; substitute your application's name in both
-places. All commands target the `maludb` database from the Quickstart: the
+MaluDB does not modify new or existing PostgreSQL schemas automatically — you
+enable each schema explicitly. The steps below create an application user 
+named `app` with a schema of the same name; substitute your application's name in
+both places. All commands target the `maludb` database from the Quickstart: the
 extension is per-database, so pointing them at the default `postgres`
 database fails with `ERROR: schema "maludb_core" does not exist`.
 
-**1. Create the application user and grant it MaluDB access.**
+**1. Create the application user if necessary.**
+
+Make sure you change the database name to your target database and 'app' to 
+the name of your new user.
 
 ```bash
-sudo -u postgres psql -d maludb -c "CREATE USER app" -c "GRANT maludb_user TO app"
+sudo -u postgres psql -d maludb -c "CREATE USER app"
+```
+You should see: `CREATE ROLE`.
+
+**2. Grant the schema MaluDB access.**
+
+Make sure you change the database name to your target database and 'app' to 
+the name of your new user.
+
+```bash
+sudo -u postgres psql -d maludb -c "GRANT maludb_user TO app"
 ```
 
-You should see: `CREATE ROLE` then `GRANT ROLE`.
+You should see: `GRANT ROLE`.
 
-**2. Create the application schema, owned by that user.**
+**3. Create the application schema, owned by that user.**
+
+Make sure you change the database name to your target database and 'app' to 
+the name of your new schema and user.
 
 ```bash
 sudo -u postgres psql -d maludb -c "CREATE SCHEMA app AUTHORIZATION app"
@@ -140,7 +173,10 @@ sudo -u postgres psql -d maludb -c "CREATE SCHEMA app AUTHORIZATION app"
 
 You should see: `CREATE SCHEMA`.
 
-**3. Enable the memory facades in the schema.**
+**4. Enable the memory facades in the schema.**
+
+Make sure you change the database name to your target database and 'app' to 
+the name of your new schema.
 
 ```bash
 sudo -u postgres psql -d maludb -c "SELECT * FROM maludb_core.enable_memory_schema('app')"
@@ -154,7 +190,10 @@ You should see one row:
  app         | 0.95.0          |          145
 ```
 
-**4. Verify the schema works as the application user.**
+**5. Verify the schema works as the application user.**
+
+Make sure you change the database name to your target database and 'app' to 
+the name of your new schema.
 
 ```bash
 sudo -u postgres psql -d maludb -c "SET ROLE app; SET search_path TO app, maludb_core, public; SELECT * FROM maludb_subject"
