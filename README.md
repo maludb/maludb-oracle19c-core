@@ -76,21 +76,44 @@ A small number of invariants run through the whole system:
 
 ## Quickstart
 
-```bash
-# 1. Install (Ubuntu 24.04 build host).
-sudo scripts/maludb-bootstrap
+Each block below is one step: copy it, run it, and check the result
+against the line underneath before moving on.
 
-# 2. Create a database and the extension.
+**1. Install (Ubuntu 24.04 build host).**
+
+```bash
+sudo scripts/maludb-bootstrap
+```
+
+You should see: the bootstrap finishes with a `Next steps:` checklist
+(optional services, post-install validator, listener smoke test).
+
+**2. Create a database and install the extension.**
+
+```bash
 sudo -u postgres createdb maludb
 sudo -u postgres psql -d maludb -c "CREATE EXTENSION maludb_core CASCADE"
+```
 
-# 3. VERIFY the version before going further.
+You should see: a few `NOTICE: installing required extension ...` lines
+(`vector`, `btree_gist`, `pg_trgm`, `pgcrypto`), then `CREATE EXTENSION`.
+
+**3. Verify the version before going further.**
+
+```bash
 sudo -u postgres psql -d maludb -tAc "SELECT maludb_core.maludb_core_version()"
-#    Expected: 0.95.0
+```
 
-# 4. Walk through the first scenario.
+You should see exactly: `0.95.0`
+
+**4. Walk through the first scenario.**
+
+```bash
 psql -d maludb -f examples/01-ingest-to-replay.sql
 ```
+
+You should see: the ingest→replay walkthrough stream by, ending with
+`example 01 done.`
 
 ### Enable MaluDB memory in an application schema
 
@@ -112,6 +135,10 @@ SET search_path TO app, maludb_core, public;
 SELECT * FROM maludb_core.enable_memory_schema();
 SELECT * FROM maludb_subject;
 ```
+
+You should see: `enable_memory_schema()` returns one row —
+`(app, 0.95.0, 145)` — and `maludb_subject` returns an empty result
+(0 rows) until you ingest your first memory.
 
 For read-only users, grant `maludb_read`. On fresh installs where the role name
 is available, `GRANT maludb TO app_user` is also a short alias for

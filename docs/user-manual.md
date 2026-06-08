@@ -456,12 +456,12 @@ can opt in to schema-local memory views. The enablement step is explicit;
 creating a schema by itself does not add memory objects.
 
 ```sql
-CREATE USER zozocal;
-GRANT maludb_user TO zozocal;
-CREATE SCHEMA zozocal AUTHORIZATION zozocal;
+CREATE USER app;
+GRANT maludb_user TO app;
+CREATE SCHEMA app AUTHORIZATION app;
 
-SET ROLE zozocal;
-SET search_path TO zozocal, maludb_core, public;
+SET ROLE app;
+SET search_path TO app, maludb_core, public;
 SELECT * FROM maludb_core.enable_memory_schema();
 ```
 
@@ -484,50 +484,50 @@ Existing installs that already have a login or superuser named `maludb` leave
 that role untouched; use `maludb_user` or the helper script instead:
 
 ```bash
-psql -d mydb -v role=app_user -v access=write -f sql/grant-memory-access.sql
+psql -d maludb -v role=app_user -v access=write -f sql/grant-memory-access.sql
 ```
 
 Operators can also run the wrapper script from `psql`:
 
 ```bash
-psql -d mydb -v schema=zozocal -f sql/enable-memory-schema.sql
+psql -d maludb -v schema=app -f sql/enable-memory-schema.sql
 ```
 
 After enablement, tenant users query familiar schema-local names while rows stay
 owner-scoped in extension tables:
 
 ```sql
-INSERT INTO zozocal.maludb_project(subject_type, canonical_name)
-VALUES ('project', 'zozocal migration');
+INSERT INTO app.maludb_project(subject_type, canonical_name)
+VALUES ('project', 'app migration');
 
 SELECT *
-FROM zozocal.maludb_subject;
+FROM app.maludb_subject;
 ```
 
 Documents, raw ingest, embeddings, and pools use the same schema-local surface:
 
 ```sql
 SELECT *
-FROM zozocal.maludb_unapplied_ingest;
+FROM app.maludb_unapplied_ingest;
 
-SELECT zozocal.maludb_upload_document(
+SELECT app.maludb_upload_document(
     p_title => 'Cutover notes',
     p_content_text => 'Deploy window notes and operator comments',
     p_source_type => 'document',
-    p_projects => ARRAY['zozocal migration']
+    p_projects => ARRAY['app migration']
 );
 
 SELECT *
-FROM zozocal.maludb_vector_search(
-    p_subject => 'zozocal migration',
+FROM app.maludb_vector_search(
+    p_subject => 'app migration',
     p_query_embedding => maludb_core.vector_from_real_array('{1,0,0,0}'::real[])
 );
 
-INSERT INTO zozocal.maludb_memory_pool(pool_name, task_objective)
-VALUES ('zozocal-coding-agent', 'Focused memory for Zozocal coding agents');
+INSERT INTO app.maludb_memory_pool(pool_name, task_objective)
+VALUES ('app-coding-agent', 'Focused memory for coding agents');
 
 SELECT *
-FROM zozocal.maludb_pool_search('zozocal-coding-agent', 'schema views', 20, false);
+FROM app.maludb_pool_search('app-coding-agent', 'schema views', 20, false);
 ```
 
 The generated facades include subjects, verbs, source packages, claims, facts,

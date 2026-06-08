@@ -33,18 +33,18 @@ prompts, providers, and the model gateway.
 Grant a real PG user a tenant role:
 
 ```sql
-CREATE USER zozocal;
-GRANT maludb_user TO zozocal;
-CREATE SCHEMA zozocal AUTHORIZATION zozocal;
-SET ROLE zozocal;
-SET search_path TO zozocal, maludb_core, public;
+CREATE USER app;
+GRANT maludb_user TO app;
+CREATE SCHEMA app AUTHORIZATION app;
+SET ROLE app;
+SET search_path TO app, maludb_core, public;
 SELECT * FROM maludb_core.enable_memory_schema();
 ```
 
 Scripted onboarding can use:
 
 ```bash
-psql -d mydb -v role=zozocal -v access=write -f sql/grant-memory-access.sql
+psql -d maludb -v role=app -v access=write -f sql/grant-memory-access.sql
 ```
 
 After login, the schema owner should keep `search_path` in that order so
@@ -77,7 +77,7 @@ sudo -u postgres pg_basebackup -D /backups/$(date +%F) \
 For per-database logical backups:
 
 ```bash
-sudo -u postgres pg_dump -Fc -d mydb -f /backups/mydb-$(date +%F).dump
+sudo -u postgres pg_dump -Fc -d maludb -f /backups/maludb-$(date +%F).dump
 ```
 
 ## 3. Retention + lifecycle
@@ -166,7 +166,7 @@ upgrade an existing database:
 
 ```bash
 # After `sudo apt upgrade maludb` lands the new files:
-sudo -u postgres psql -d mydb -c \
+sudo -u postgres psql -d maludb -c \
     "ALTER EXTENSION maludb_core UPDATE TO '0.74.0'"
 ```
 

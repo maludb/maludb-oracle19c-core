@@ -33,11 +33,11 @@ the memory facades:
 -- running this from the default `postgres` database "succeeds" through the
 -- GRANT/SET steps and then fails with
 -- ERROR: schema "maludb_core" does not exist.
-CREATE USER zozocal;
-GRANT maludb_user TO zozocal;
-CREATE SCHEMA zozocal AUTHORIZATION zozocal;
-SET ROLE zozocal;
-SET search_path TO zozocal, maludb_core, public;
+CREATE USER app;
+GRANT maludb_user TO app;
+CREATE SCHEMA app AUTHORIZATION app;
+SET ROLE app;
+SET search_path TO app, maludb_core, public;
 SELECT * FROM maludb_core.enable_memory_schema();
 SELECT * FROM maludb_subject;
 RESET ROLE;
@@ -49,8 +49,8 @@ tenant users can add manual skill keywords and search their own plus public
 skills:
 
 ```sql
-SET ROLE zozocal;
-SET search_path TO zozocal, maludb_core, public;
+SET ROLE app;
+SET search_path TO app, maludb_core, public;
 
 INSERT INTO maludb_skill(skill_name, version, description, packaging_kind)
 VALUES ('meeting_action_item_extractor', '1.0.0',
