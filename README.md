@@ -10,6 +10,10 @@ The project is a single managed installation: `sudo apt install maludb`
 + the `maludb_core` extension wired together. Operators don't have to
 provision PostgreSQL manually.
 
+**New here?** Start with the [executive summary](executive-summary.md) —
+what MaluDB is, the memory model, and why retrieval is relational/graph-first
+with vector search reserved for the query classes that genuinely need it.
+
 ## Status
 
 | | |
@@ -77,21 +81,15 @@ A small number of invariants run through the whole system:
 sudo scripts/maludb-bootstrap
 
 # 2. Create a database and the extension.
-sudo -u postgres createdb mydb
-sudo -u postgres psql -d mydb -c "CREATE EXTENSION maludb_core CASCADE"
+sudo -u postgres createdb maludb
+sudo -u postgres psql -d maludb -c "CREATE EXTENSION maludb_core CASCADE"
 
-# 3. VERIFY the version before going further. CREATE EXTENSION installs
-#    whatever default_version the host's extension files declare — if a
-#    stale build was ever installed on this host, you silently get an old
-#    version and later steps fail with "relation ... does not exist".
-sudo -u postgres psql -d mydb -tAc "SELECT maludb_core.maludb_core_version()"
-#    Expected: the version in maludb_core.control of the checkout you
-#    installed from (0.94.0 for this tree). If it prints something older:
-#      sudo make -C <this-checkout> install
-#      sudo -u postgres psql -d mydb -c "ALTER EXTENSION maludb_core UPDATE"
+# 3. VERIFY the version before going further.
+sudo -u postgres psql -d maludb -tAc "SELECT maludb_core.maludb_core_version()"
+#    Expected: 0.95.0
 
 # 4. Walk through the first scenario.
-psql -d mydb -f examples/01-ingest-to-replay.sql
+psql -d maludb -f examples/01-ingest-to-replay.sql
 ```
 
 ### Enable MaluDB memory in an application schema
@@ -101,14 +99,16 @@ schema into schema-local memory views:
 
 ```sql
 -- Run this connected to the database where maludb_core is installed
--- (e.g. `psql -d mydb` or `\c mydb`). The extension is per-database:
+-- (e.g. `psql -d maludb` or `\c maludb`). The extension is per-database:
 -- running this from the default `postgres` database fails with
 -- ERROR: schema "maludb_core" does not exist.
-CREATE USER zozocal;
-GRANT maludb_user TO zozocal;
-CREATE SCHEMA zozocal AUTHORIZATION zozocal;
-SET ROLE zozocal;
-SET search_path TO zozocal, maludb_core, public;
+-- `app` below is your application's user and schema — name it after
+-- your application.
+CREATE USER app;
+GRANT maludb_user TO app;
+CREATE SCHEMA app AUTHORIZATION app;
+SET ROLE app;
+SET search_path TO app, maludb_core, public;
 SELECT * FROM maludb_core.enable_memory_schema();
 SELECT * FROM maludb_subject;
 ```
@@ -132,13 +132,13 @@ cd <this-checkout> && git pull
 sudo make install PG_CONFIG=/usr/lib/postgresql/17/bin/pg_config
 
 # 2. PER DATABASE: update the extension in every database that has it.
-sudo -u postgres psql -d mydb -c "ALTER EXTENSION maludb_core UPDATE"
-sudo -u postgres psql -d mydb -tAc "SELECT maludb_core.maludb_core_version()"  # confirm
+sudo -u postgres psql -d maludb -c "ALTER EXTENSION maludb_core UPDATE"
+sudo -u postgres psql -d maludb -tAc "SELECT maludb_core.maludb_core_version()"  # confirm
 
 # 3. PER TENANT SCHEMA: refresh the memory facades. A migration cannot
 #    replace tenant-owned views/functions (they are not extension members),
 #    so new or changed facade objects only appear after this re-run.
-sudo -u postgres psql -d mydb -c "SELECT * FROM maludb_core.enable_memory_schema('zozocal')"
+sudo -u postgres psql -d maludb -c "SELECT * FROM maludb_core.enable_memory_schema('app')"
 ```
 
 To list the schemas that need step 3 in a database:
@@ -176,11 +176,11 @@ ss -tln | grep 5432           # should now show 0.0.0.0:5432 (or your address)
 ```
 
 **2. Give the application role a password.** Peer authentication does
-not work over TCP; remote logins use `scram-sha-256`. The `zozocal`
+not work over TCP; remote logins use `scram-sha-256`. The `app`
 user created above has no password yet:
 
 ```bash
-sudo -u postgres psql -c "ALTER USER zozocal PASSWORD 'choose-a-password'"
+sudo -u postgres psql -c "ALTER USER app PASSWORD 'choose-a-password'"
 ```
 
 **3. Allow the client in `pg_hba.conf`.** Add a `host` line to
@@ -189,7 +189,7 @@ address (or subnet), then reload:
 
 ```conf
 # TYPE  DATABASE   USER      ADDRESS               METHOD
-host    mydb       zozocal   192.168.100.0/24      scram-sha-256
+host    maludb     app       192.168.100.0/24      scram-sha-256
 ```
 
 ```bash
@@ -207,7 +207,7 @@ sudo ufw allow from 192.168.100.0/24 to any port 5432 proto tcp
 **Verify from the application server** before wiring up a driver:
 
 ```bash
-PGPASSWORD='choose-a-password' psql -h <server-address> -p 5432 -U zozocal -d mydb \
+PGPASSWORD='choose-a-password' psql -h <server-address> -p 5432 -U app -d maludb \
     -c 'select current_user, current_database()'
 ```
 
