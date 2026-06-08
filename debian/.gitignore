@@ -16,6 +16,3 @@ maludb-mc2dbd/
 
 # Generated systemd unit (rewritten paths) — see debian/rules.
 maludb-mc2dbd.service
-
-# Per-package staging tree for the metapackage (dh_install).
-maludb/

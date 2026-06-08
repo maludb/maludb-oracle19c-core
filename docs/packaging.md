@@ -1,19 +1,13 @@
 # MaluDB Debian packaging
 
-Five binary packages ship from a single `dpkg-buildpackage` invocation:
+Four binary packages ship from a single `dpkg-buildpackage` invocation:
 
 | Package | Contents |
 |---|---|
-| `maludb` | Metapackage (`Architecture: all`) — the `sudo apt install maludb` entry point. Depends on `postgresql-17-maludb-core` (which pulls PostgreSQL 17 + pgvector + pgaudit + pg_partman) and recommends `maludb-mc2dbd`. |
 | `postgresql-16-maludb-core` | The PGXS extension built for PostgreSQL 16. |
 | `postgresql-17-maludb-core` | The PGXS extension built for PostgreSQL 17. |
 | `postgresql-18-maludb-core` | The PGXS extension built for PostgreSQL 18. |
 | `maludb-mc2dbd` | The MC2DB listener daemon (`maludb_mc2dbd`) + systemd unit, with the four implementation_type dispatchers wired (`sql_function`, `external_exec`, `mcp_proxy`, `http_endpoint`). |
-
-`sudo apt install maludb` becomes available once these `.deb`s are
-published in a signed APT repository (self-hosted reprepro/aptly, a
-managed host, or — long term — PGDG inclusion); until then the install
-path is `dpkg -i` below.
 
 Each `postgresql-N-maludb-core` package carries `maludb_core.so`,
 `maludb_core.control`, and every `maludb_core--X.Y--X.Z.sql`
@@ -88,7 +82,7 @@ so after configuring `/etc/maludb/maludb-mc2dbd.conf`.
    the source-clone bootstrap path keeps working.
 4. `override_dh_auto_test` — explicitly skipped. pg_regress requires
    a live PG cluster; operators run `make installcheck` after
-   `apt install`.
+   installing the packages.
 
 ## Multi-version support
 

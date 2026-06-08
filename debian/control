@@ -105,21 +105,3 @@ Description: MaluDB MC2DB listener (MCP-over-HTTPS sidecar)
  ProtectHome=read-only, RestrictAddressFamilies). Listens on
  127.0.0.1:5329 by default; bind/cert/token configured under
  /etc/maludb/maludb-mc2dbd.conf.
-
-Package: maludb
-Architecture: all
-Depends: ${misc:Depends},
-         postgresql-17-maludb-core (>= ${source:Version})
-Recommends: maludb-mc2dbd (>= ${source:Version})
-Description: memory DBMS for long-term institutional memory (metapackage)
- Single managed installation of the MaluDB stack: pulls in PostgreSQL 17
- with pgvector, pgaudit and pg_partman plus the maludb_core extension
- (via postgresql-17-maludb-core), and by default the MC2DB MCP listener
- daemon (maludb-mc2dbd). Operators on a different PostgreSQL major can
- install postgresql-16-maludb-core or postgresql-18-maludb-core
- directly instead.
- .
- After installation, create the extension in a database:
- .
-   sudo -u postgres createdb maludb
-   sudo -u postgres psql -d maludb -c "CREATE EXTENSION maludb_core CASCADE"
