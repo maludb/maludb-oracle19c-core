@@ -55,12 +55,13 @@ WHERE subject_id = :episode_subject_id;
 subject_type|title_aliased
 deployment|t
 (1 row)
--- The kind was auto-registered in the global subject_type picker.
+-- 'deployment' is a seeded event-kind subject_type (system_defined = true
+-- since 0.96.0); the episode resolves to it rather than auto-registering.
 SELECT subject_type, system_defined
 FROM maludb_core.malu$svpor_subject_type
 WHERE subject_type = 'deployment';
 subject_type|system_defined
-deployment|f
+deployment|t
 (1 row)
 -- The event subject participates in the subject-relationship layer.
 INSERT INTO maludb_subject(subject_type, canonical_name)

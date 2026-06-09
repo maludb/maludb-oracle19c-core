@@ -1,3 +1,23 @@
+maludb (0.96.0-1) noble; urgency=medium
+
+  * v4.4.0 release. Extension default_version 0.96.0; 89/89 pg_regress
+    on PostgreSQL 17; fresh-install ≡ 0.1.0→0.96.0 upgrade verified via
+    the catalog snapshot gate.
+  * Event kinds become first-class subject types (0.96.0): the SVPOR
+    subject-type catalog gains an entity/event category and seeds the
+    common event kinds (deployment, incident, daily_standup, …) with
+    curated descriptions; the generic event type and prior auto-
+    registered kinds move to category=event; project stays entity-only.
+    Extraction JSON contract unchanged.
+  * API prompt is now catalog-driven: docs/extraction-prompt-0.96.0.md
+    renders the entity-type and event-kind lists (with descriptions)
+    from maludb_subject_type, superseding the hardcoded gpt-4o prompt.
+  * Quickstart fix: drop the redundant manual createdb/CREATE EXTENSION
+    steps (maludb-bootstrap already does both for the default database);
+    they are now the explicit custom/existing-database branch.
+
+ -- Edward Honour <ed@maludb.org>  Tue, 09 Jun 2026 00:00:00 +0000
+
 maludb (0.95.0-1) noble; urgency=medium
 
   * v4.3.0 release. Extension default_version 0.95.0;

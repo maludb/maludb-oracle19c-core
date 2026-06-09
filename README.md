@@ -13,7 +13,7 @@ with vector search reserved for the query classes that genuinely need it.
 
 | | |
 |---|---|
-| Version | **0.95.0** (extension) — the "semantic spine": subjects/verbs/edges are the vector layer (deterministic in-DB entity cards + trigger-fed dirty queue + external embed worker, landing in the object-embedding rail) with **opt-in** `similar_to` traversal jumps; the chunk-compartment rail is frozen/deprecated; extraction JSON contract unchanged (see `docs/semantic-entity-embeddings.md`). Includes 0.94.0: episodes folded into subjects (**BREAKING** ingest contract — `episodes[]` removed; events are `subjects[]` entries with `occurred_at`). Latest release tag `v4.3.0` shipped extension 0.95.0 on 2026-06-07. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
+| Version | **0.96.0** (extension) — **event kinds are first-class subject types**: the SVPOR subject-type catalog gains an `entity`/`event` `category` and seeds the common event kinds (deployment, incident, daily_standup, …) with curated descriptions, so the extraction prompt can be rendered from the catalog (no ingest-contract change; see `docs/extraction-prompt-0.96.0.md`). Builds on the 0.95.0 "semantic spine" (entity-card embeddings + trigger-fed dirty queue + external embed worker landing in the object-embedding rail, **opt-in** `similar_to` jumps, chunk rail frozen) and 0.94.0 episodes-as-subjects. Latest release tag `v4.4.0` shipped extension 0.96.0 on 2026-06-09. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
 | Test suite | **89 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
 | Drivers | Python, Node.js, PHP, C — all four validated against the live extension |
 | External services | `maludb_modeld` (model gateway) + `maludb_mc2dbd` (database MCP listener) + `mcp-broker` (external-tool MCP broker) + `maludb-restd` (V3 REST gateway) + `maludb-realtimed` (V3 SSE event stream) + `maludb-pageindexd` (V4 PageIndex / ChatIndex builder) |
@@ -76,9 +76,12 @@ against the line underneath before moving on.
 
 **1. Install (Ubuntu 24.04 build host).**
 
-Clone the repository and run the bootstrap, which builds and installs the
+Clone the repository and run the bootstrap. It builds and installs the
 `maludb_core` PostgreSQL extension (PostgreSQL 17 from PGDG, plus pgvector,
-pgaudit, and pg_partman) from source:
+pgaudit, and pg_partman) from source, then **creates the `maludb` database,
+installs the extension into it (`CREATE EXTENSION maludb_core`), and sets its
+`search_path`** — so on the default path you do not create the database or
+the extension by hand:
 
 ```bash
 git clone https://github.com/maludb/maludb-core
@@ -89,41 +92,32 @@ sudo scripts/maludb-bootstrap
 You should see: the bootstrap finishes with a `Next steps:` checklist
 (optional services, post-install validator, listener smoke test). Run the
 remaining steps from this `maludb-core` checkout — that's where the
-`examples/` scripts step 5 uses live.
+`examples/` scripts step 3 uses live.
 
-**2. Create a database and install the extension.**
+> **Using a different or existing database?** Step 1 already created the
+> default `maludb` database and installed the extension into it — so on the
+> default path skip straight to verification below. To use another name (or
+> an existing database), create it if needed and install the extension there
+> yourself, then substitute that name for `maludb` in every step that
+> follows:
+>
+> ```bash
+> sudo -u postgres createdb mydb                                       # omit if it already exists
+> sudo -u postgres psql -d mydb -c "CREATE EXTENSION maludb_core CASCADE"
+> ```
+>
+> `CREATE EXTENSION` prints a few `NOTICE: installing required extension ...`
+> lines (`vector`, `btree_gist`, `pg_trgm`, `pgcrypto`), then `CREATE EXTENSION`.
 
-This script creates a database named maludb.  If you want a different
-name replace 'maludb' with your new database name. If you are installing
-MaluDb in an existing database, you can skip this step.
-
-```bash
-sudo -u postgres createdb maludb
-```
-
-**3. Create the maludb_core extension in the target database.**
-
-If you are not installing in the 'maludb' database change it first.
-
-```bash
-sudo -u postgres psql -d maludb -c "CREATE EXTENSION maludb_core CASCADE"
-```
-
-You should see: a few `NOTICE: installing required extension ...` lines
-(`vector`, `btree_gist`, `pg_trgm`, `pgcrypto`), then `CREATE EXTENSION`.
-
-**4. Verify the version.**
-
-If you are not installing in the 'maludb' database change the database name 
-before verifying.
+**2. Verify the version.**
 
 ```bash
 sudo -u postgres psql -d maludb -tAc "SELECT maludb_core.maludb_core_version()"
 ```
 
-You should see exactly: `0.95.0`
+You should see exactly: `0.96.0`
 
-**5. Walk through the first scenario (optional).**
+**3. Walk through the first scenario (optional).**
 
 This script connects to the target database and runs a series of commands.
 Replace 'maludb' with your database name if necessary.
@@ -198,7 +192,7 @@ You should see one row:
 ```
  schema_name | enabled_version | object_count
 -------------+-----------------+--------------
- app         | 0.95.0          |          145
+ app         | 0.96.0          |          146
 ```
 
 **5. Verify the schema works as the application user.**

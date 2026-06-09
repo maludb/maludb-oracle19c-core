@@ -852,7 +852,6 @@ drop cascades to view sme_a.maludb_skill_access
 drop cascades to function sme_a.maludb_skill_search(text,text,text,malu_vector,integer,boolean)
 drop cascades to function sme_a.maludb_skill_get(name,bigint)
 drop cascades to function sme_a.maludb_skill_fork(name,bigint,text,text)
-drop cascades to view sme_a.maludb_subject_type
 drop cascades to view sme_a.maludb_verb_type
 drop cascades to view sme_a.maludb_document_svpor_hint
 drop cascades to function sme_a.maludb_quick_add_note(text,text,text[],text[],text[],jsonb,jsonb)
@@ -903,6 +902,7 @@ drop cascades to function sme_a.maludb_create_reference_view(text,text,text,text
 drop cascades to view sme_a.maludb_edge
 drop cascades to function sme_a.maludb_graph_neighbors(text,bigint,text,text[])
 drop cascades to function sme_a.maludb_graph_walk(text,bigint,integer,text,text[])
+drop cascades to view sme_a.maludb_object_embedding
 and 40 other objects (see server log for list)
 DROP SCHEMA sme_b CASCADE;
 DO $body$

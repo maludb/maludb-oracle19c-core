@@ -5,6 +5,51 @@ All notable changes to MaluDB land here. The format follows
 versions correspond to the extension migration chain
 (`maludb_core--X.Y--X.Z.sql`) plus a release tag.
 
+## v4.4.0 — 2026-06-09
+
+The extension default_version advances to **0.96.0**. 89/89 pg_regress on
+PostgreSQL 17; fresh-install ≡ 0.1.0→0.96.0 upgrade verified via the catalog
+snapshot gate.
+
+### 0.96.0
+
+**Event kinds become first-class subject types.** 0.94.0 folded episodes into
+subjects, so an event's `subject_type` *is* its event kind — but those kinds
+only ever materialized lazily, with an identical generic description and
+`system_defined = false`: no per-type guidance for the extraction LLM, and
+free-form kinds fragmented the catalog (`standup` / `daily_standup` /
+`stand_up`). Entity types, by contrast, are curated *and* protected. This
+release gives the common event kinds the same treatment and makes the two
+families explicit. The ingest JSON contract is unchanged.
+
+- **`category` split**: `malu$svpor_subject_type` gains `category`
+  (`'entity'` | `'event'`). The strict normalizer still rejects unknown
+  *entity* types (closed allow-list, so a bad entity type is dropped, not
+  stored); event kinds stay open — an unknown kind auto-registers, now
+  stamped `category = 'event'`.
+- **Seeded event kinds**: `meeting`, `daily_standup`, `one_on_one`, `review`,
+  `retrospective`, `planning`, `sprint`, `task`, `deployment`, `incident`,
+  `maintenance_window` are seeded `system_defined = true` with discriminative
+  descriptions; the generic `event` type and any previously auto-registered
+  kinds move to `category = 'event'`. `project` stays entity-only (a project
+  entity and a "project kickoff" occurrence must not collide on one
+  `subject_type` primary key).
+- **Facade**: the `maludb_subject_type` facade exposes `category` (new
+  `_enable_memory_schema_0960_facade`; the view joins the
+  `enable_memory_schema` drop-first list so its column set can grow across
+  re-enables). Re-run `enable_memory_schema('<tenant>')` after upgrading to
+  pick up the column.
+- **API server (prompt-only, no contract change)**:
+  `docs/extraction-prompt-0.96.0.md` renders the subject-type vocabulary —
+  entity types and event kinds, with their descriptions — from the catalog
+  instead of hardcoding it, so weaker cloud models get per-type guidance and
+  the prompt can never drift from what the DB accepts. Supersedes the 0.94.0
+  `docs/extraction-prompt-gpt-4o.md`.
+- **Docs**: the Quickstart no longer tells you to `createdb maludb` /
+  `CREATE EXTENSION` by hand — `scripts/maludb-bootstrap` already does that
+  for the default `maludb` database; the manual commands are now the explicit
+  custom/existing-database branch.
+
 ## v4.3.0 — 2026-06-07
 
 The extension default_version advances to **0.95.0**; this tag ships both
