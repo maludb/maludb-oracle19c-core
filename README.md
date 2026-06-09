@@ -167,16 +167,26 @@ sudo -u postgres psql -d maludb -c "GRANT maludb_user TO app"
 
 You should see: `GRANT ROLE`.
 
-**3. Create the application schema, owned by that user.**
+**3. Create the application schema and point the role's search path at it.**
 
 Make sure you change the database name to your target database and 'app' to 
 the name of your new schema and user.
 
 ```bash
 sudo -u postgres psql -d maludb -c "CREATE SCHEMA app AUTHORIZATION app"
+sudo -u postgres psql -d maludb -c "ALTER ROLE app SET search_path TO app, maludb_core, public"
 ```
 
-You should see: `CREATE SCHEMA`.
+You should see: `CREATE SCHEMA`, then `ALTER ROLE`.
+
+Step 1's bootstrap set the **database** default `search_path` to
+`maludb_core, public` (so admin calls to unqualified `maludb_core` functions
+resolve) — which omits the tenant schema. The `ALTER ROLE` above pins the path
+on the **role**, so every login as `app` resolves its own schema-local
+`maludb_*` views automatically, with no per-connection `SET search_path`.
+Without it you get `ERROR: relation "maludb_subject" does not exist`. (This
+applies at login; the `SET ROLE` one-liner in step 5 still sets `search_path`
+explicitly because `SET ROLE` does not pick up a role's default.)
 
 **4. Enable the memory facades in the schema.**
 
