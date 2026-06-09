@@ -1,5 +1,13 @@
 # GPT-4o memory-extraction prompt (for the API server)
 
+> **SUPERSEDED by [`extraction-prompt-0.96.0.md`](extraction-prompt-0.96.0.md).**
+> That version renders the subject-type vocabulary (entity types + event kinds,
+> with descriptions) from the `maludb_subject_type` catalog instead of
+> hardcoding it, which the 0.96.0 `category` split requires. Keep this file only
+> for the 0.94.0 history; do not deploy its hardcoded type lists against
+> 0.96.0 (they offer `organization`, which is dropped, and `project` as an
+> event kind, which now collides with the `project` entity type).
+>
 > Produces the JSON object consumed by `maludb_memory_ingest_extraction(...)`
 > (contract: `docs/memory-extraction-json-contract.md`, **0.94.0 revision**).
 > The API server calls GPT-4o with the SYSTEM prompt below + a USER message
