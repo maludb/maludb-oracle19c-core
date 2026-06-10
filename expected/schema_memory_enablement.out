@@ -186,7 +186,7 @@ SET search_path TO sme_a, maludb_core, public;
 SELECT object_count AS enable_object_count
 FROM maludb_core.enable_memory_schema();
 enable_object_count
-146
+149
 (1 row)
 SELECT object_count AS enable_refresh_object_count
 FROM maludb_core.enable_memory_schema();
@@ -199,7 +199,7 @@ NOTICE:  drop cascades to view sme_a.maludb_document_with_attributes
 NOTICE:  drop cascades to view sme_a.maludb_episode_with_attributes
 NOTICE:  view "maludb_episode_with_attributes" does not exist, skipping
 enable_refresh_object_count
-146
+149
 (1 row)
 SELECT bool_and(c.oid IS NOT NULL) AS enabled_facades_created
 FROM unnest(ARRAY[
