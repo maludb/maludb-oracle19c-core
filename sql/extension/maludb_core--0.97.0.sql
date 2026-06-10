@@ -49143,6 +49143,10 @@ DECLARE
 BEGIN
     PERFORM maludb_core._memory_schema_assert_manageable(p_schema);
 
+    -- Widen the view WITHOUT re-granting (the 080 builder's recipe):
+    -- CREATE OR REPLACE preserves the ACLs the earlier builders layered,
+    -- including the 073 maludb_public revoke that keeps public skill
+    -- writes curator-only. A re-GRANT here would silently undo it.
     PERFORM maludb_core._memory_schema_assert_object_slot(p_schema, 'maludb_skill', 'view');
     EXECUTE format($sql$
         CREATE OR REPLACE VIEW %I.maludb_skill WITH (security_invoker = true) AS
@@ -49154,8 +49158,6 @@ BEGIN
          WHERE owner_schema = %L
         WITH LOCAL CHECK OPTION
     $sql$, p_schema, p_schema);
-    EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON %I.maludb_skill TO maludb_memory_admin, maludb_memory_executor', p_schema);
-    EXECUTE format('GRANT SELECT ON %I.maludb_skill TO maludb_memory_auditor', p_schema);
     PERFORM maludb_core._memory_schema_record_object(p_schema, 'maludb_skill', 'view', 'Schema-local skill package facade.');
     v_count := v_count + 1;
 
