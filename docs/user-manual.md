@@ -34,10 +34,10 @@ MaluDB is a memory DBMS built on PostgreSQL 17. It is delivered as:
 
 | | |
 |---|---|
-| Extension `default_version` | **0.97.0** (agent-skill distribution: `skill` entity type, `bundle_hash`/`frontmatter_jsonb` content identity, `malu$skill_file` bundle manifest, `maludb_skill_register` one-call registration with divergent fork lineage + supersession, content-immutability guard, `fork_skill` body/bundle copy fix — on 0.96.0 event kinds as first-class subject types and the 0.95.0 semantic spine: entity-card embeddings + dirty queue + opt-in `similar_to` traversal jumps; earlier: episodes-as-subjects, memory-model episodes/attributes, vector compartments, in-database model gateway, link helpers, one-call extraction ingest; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
+| Extension `default_version` | **0.98.0** (note retrieval by subject/verb: one-call `maludb_note_search` over extracted SVO edges — subject patterns against both statement endpoints, verb-exact/verb-like bidirectional containment, both statement→document rails, one row per note with matched edges aggregated — plus deterministic `maludb_note_query_parse` free-text parsing against the tenant verb catalog — on 0.97.0 agent-skill distribution, 0.96.0 event kinds as first-class subject types, and the 0.95.0 semantic spine; earlier: episodes-as-subjects, memory-model episodes/attributes, vector compartments, in-database model gateway, link helpers, one-call extraction ingest; V4 acceptance artefacts remain `scripts/maludb-fieldtest-v4`, `bench/v4/run-bench`, and `docs/v4/acceptance-matrix.md`) |
 | Last release tag | **`v4.4.0`** at extension `0.96.0` (event kinds as first-class subject types, 2026-06-09) |
 | Supported PostgreSQL majors | 16, 17, 18 (PG 17 is the blocking CI target) |
-| Test suite | 90 `pg_regress` targets on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
+| Test suite | 91 `pg_regress` targets on PG 17 + restd / realtimed / CLI / libmaludb v0.2 / pageindexd parser smoke |
 | Shipped services | `maludb_modeld`, `maludb_mc2dbd`, `mcp-broker`, `maludb-restd`, `maludb-realtimed`, `maludb-pageindexd` |
 | Shipped SDKs | C (`libmaludb` v0.2.0 — pool/skill/node wrappers), Python, Node.js, PHP (`maludb/client` via Composer) |
 | Shipped CLI | `maludb` v0.1.0 (V3-CLI-01) |
