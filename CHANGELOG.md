@@ -5,6 +5,56 @@ All notable changes to MaluDB land here. The format follows
 versions correspond to the extension migration chain
 (`maludb_core--X.Y--X.Z.sql`) plus a release tag.
 
+## Unreleased
+
+### 0.97.0
+
+**Agent-skill distribution.** Skills become distributable, immutable,
+multi-file artifacts so Claude Agent Skills (SKILL.md bundles: instructions
+plus `scripts/`, `references/`, `assets/`) can be ingested, discovered, and
+shared across project teams with the database as the distribution point. The
+0.73.0 skill-discovery layer already carried fork lineage
+(`source_owner_schema` / `source_skill_id` / `forked_at`), visibility, tag
+tables, and embeddings; 0.97.0 adds what an agent-skill bundle needs on top.
+
+- **`skill` entity subject type** seeded (curated, `category = 'entity'`),
+  so extraction can mint a graph subject per skill; the catalog-driven API
+  prompt picks it up automatically.
+- **Content identity**: `malu$skill_package` gains `bundle_hash` (sha256
+  over the sorted per-file hashes — a script edit changes the bundle even
+  when SKILL.md is untouched) and `frontmatter_jsonb` (parsed SKILL.md YAML
+  frontmatter, verbatim).
+- **Bundle manifest**: new `malu$skill_file` — one row per bundle file,
+  content stored as deduplicatable `malu$source_package` rows (new
+  `skill_file` source type), with `relative_path` (absolute and `..` paths
+  rejected) + `is_executable` so a client can reconstruct the directory
+  faithfully. `get_skill` payload gains a `files` array.
+- **Content immutability**: once `bundle_hash` is set, `markdown` /
+  `bundle_hash` / `frontmatter_jsonb` / `skill_name` reject UPDATE
+  (trigger). A changed skill re-registers as a NEW row; lifecycle columns
+  (`enabled`, `visibility`, `description`) stay mutable. Lineage is a
+  strictly divergent DAG — no merges.
+- **`maludb_skill_register`** (per-schema facade over
+  `_register_agent_skill_for_schema`): one-call registration. Dedupes on
+  (`skill_name`, `bundle_hash`); version defaults to the bundle-hash prefix;
+  fills `malu$skill_keyword/subject/verb` with provenance `'extracted'`
+  (CHECKs widened from `('manual')`); links bundle files; stamps fork
+  lineage; and — when the revision is NOT materially different from its
+  parent — supersedes the parent (`enabled = false`, which drops it out of
+  `find_skill` / `get_skill` / forkability). Materially different versions
+  coexist as visible siblings.
+- **`fork_skill` bug fix**: the 0.73.0 body predates the 0.80.0 `markdown`
+  column and never copied it, so every fork to date silently lost the skill
+  body. Forks now copy `markdown`, `bundle_hash`, `frontmatter_jsonb`, and
+  the file bundle (content re-anchored as source packages in the target
+  schema, deduped on content hash).
+- **Facade**: `maludb_skill` exposes `bundle_hash` + `frontmatter_jsonb`;
+  new `maludb_skill_file` view and `maludb_skill_register` function (new
+  `_enable_memory_schema_0970_facade`; `enable_memory_schema` object count
+  146 → 149). Re-run `enable_memory_schema('<tenant>')` after upgrading.
+  In `maludb_public`, writes stay curator-only (`maludb_skill_curator`).
+- New regress test `agent_skill_distribution` (90 tests total).
+
 ## v4.4.0 — 2026-06-09
 
 The extension default_version advances to **0.96.0**. 89/89 pg_regress on
