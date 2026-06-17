@@ -7,6 +7,44 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+### 0.98.0
+
+**Note retrieval by subject/verb.** Notes ingested through the memory
+pipeline decompose into subjects, verbs, and SVO statements, but nothing
+walked that graph back to the source documents. 0.98.0 adds relational
+note search as a one-call tenant facade, so every API server stays a thin
+wrapper (`maludb get note --subject-like "ubuntu" --verb-like
+"installation"` end to end).
+
+- **`maludb_note_search`** (per-schema facade over
+  `_note_search_for_schema`): filters statements by subject-name patterns
+  (ILIKE over `canonical_name` + aliases, matched against BOTH statement
+  endpoints — the ingest-edge rail writes `document --verb--> subject`, so
+  the searched entity is usually the object) and by verb: `p_verb_exact`
+  matches canonical name or alias case-insensitively; `p_verb_like` uses
+  bidirectional containment so the query `'installation'` finds the verb
+  `'install'`. Statements reach their source documents over both rails —
+  the `malu$vector_chunk` soft ref and `'document'` statement endpoints.
+  One row per document (LIMIT means notes, not edges) with the matching
+  edges aggregated as jsonb (`statement_id`, endpoint names, verb,
+  confidence, `match_via`, `matched_endpoint`), `match_count` hoisted,
+  snippet from the source package text. Default scope is
+  `source_type = 'note'`; `p_all_sources` widens to every document kind.
+  Read-only: `maludb_memory_auditor` gets EXECUTE.
+- **`maludb_note_query_parse`** (per-schema facade over
+  `_note_query_parse_for_schema`): the deterministic half of free-text
+  search. Tokenizes the query, drops stopwords, and matches tokens against
+  the tenant verb catalog — exact canonical/alias match beats containment,
+  and containment requires a 4+ character token so `'in'` never claims
+  `'install'`. Returns `{verb, verb_id, matched_token, subject_tokens,
+  tokens}`; the LLM fallback for verbless queries stays server-side.
+  Known limit: containment misses dropped-`e` gerunds (`'upgrading'` does
+  not contain `'upgrade'`) — verb aliases or the LLM fallback cover those.
+- **Facade builder** `_enable_memory_schema_0980_facade` creates only the
+  two objects it introduces (`enable_memory_schema` object count
+  149 → 151). Re-run `enable_memory_schema('<tenant>')` after upgrading.
+- New regress test `note_search`.
+
 ### 0.97.0
 
 **Agent-skill distribution.** Skills become distributable, immutable,
