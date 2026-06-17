@@ -67,6 +67,9 @@ jobs:
         run: sudo make install PG_CONFIG="$PG_CONFIG"
 
       - name: Run pg_regress (installcheck)
+        env:
+          PGHOST: /var/run/postgresql
+          PGUSER: postgres
         run: make installcheck PG_CONFIG="$PG_CONFIG"
 
       - name: Upload regression diffs on failure
@@ -192,6 +195,9 @@ jobs:
           psql -h /var/run/postgresql -U postgres -c "SHOW server_version;"
 
       - name: Run pg_regress under sanitizers
+        env:
+          PGHOST: /var/run/postgresql
+          PGUSER: postgres
         run: make installcheck PG_CONFIG="$PG_CONFIG"
 
       - name: Upload sanitizer regression diffs on failure
