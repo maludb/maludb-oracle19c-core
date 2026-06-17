@@ -51,6 +51,10 @@ jobs:
             libicu-dev libssl-dev libreadline-dev zlib1g-dev liblz4-dev libzstd-dev \
             libmicrohttpd-dev libjansson-dev libgnutls28-dev libcurl4-openssl-dev \
             jq curl python3
+          # pgaudit is an optional governance dependency (governance_audit
+          # expects it available); tolerate a PG major that lacks a package yet.
+          sudo apt-get install -y "postgresql-${{ matrix.pg }}-pgaudit" \
+            || echo "pgaudit unavailable for PG ${{ matrix.pg }}; governance_audit will report it absent"
           sudo systemctl start postgresql@${{ matrix.pg }}-main
 
       - name: Relax local pg_hba to trust (CI only)
@@ -146,6 +150,7 @@ jobs:
           sudo apt-get autoremove -y || true
           sudo apt-get install -y \
             postgresql-17 postgresql-server-dev-17 postgresql-17-pgvector \
+            postgresql-17-pgaudit \
             build-essential pkg-config bison flex \
             libicu-dev libssl-dev libreadline-dev zlib1g-dev \
             libmicrohttpd-dev libjansson-dev libgnutls28-dev libcurl4-openssl-dev \
