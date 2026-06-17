@@ -118,3 +118,32 @@ catalog); register it for a model via `POST /v1/model-prompts`. Without a
 model, the deterministic fallback indexes the skill from its name and
 frontmatter description only (keywords + the skill subject; no guessed
 verbs).
+
+## Querying skills directly (SQL)
+
+Beyond the CLI/API, the three lifecycle operations are plain SQL facades
+that `enable_memory_schema()` installs into a tenant schema (run
+`SET search_path TO <schema>, maludb_core, public` first):
+
+- **Load** — `maludb_skill_register(p_skill_name, p_markdown, p_bundle_hash,
+  p_description, p_frontmatter, p_version, p_keywords, p_subjects, p_verbs,
+  p_files, ...)`. The DB does **not** derive tags from the markdown — supply
+  good `p_subjects`/`p_verbs`/`p_keywords` or discovery falls back to
+  full-text only.
+- **Find** — `maludb_skill_search(p_query, p_subject, p_verb,
+  p_query_embedding, p_limit, p_include_public)` — ranked, returning `score`
+  and `match_reasons` over the subject (+100) / verb (+80) / keyword (+40) /
+  full-text (+10) / embedding facets.
+- **Query** — `maludb_skill_get(p_owner_schema, p_skill_id)` → a JSONB
+  `payload` (skill row + `markdown`, keywords, subjects, verbs, `files`,
+  access policy). Browse unranked via the `maludb_skill` view.
+
+From outside an enabled schema, call `maludb_core.find_skill(...)` /
+`maludb_core.get_skill(owner_schema, skill_id, requesting_schema)` directly.
+
+Worked examples — load → find → query, with prerequisites, visibility, and
+gotchas — live in the first-party skill bundles under
+[`maludb_skills/`](../maludb_skills/), starting with
+[`using-maludb-skills`](../maludb_skills/using-maludb-skills/SKILL.md).
+Discovery tags are kept fresh by the background reindex
+([`skill-reindex.md`](skill-reindex.md)).
