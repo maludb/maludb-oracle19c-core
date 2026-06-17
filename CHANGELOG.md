@@ -7,6 +7,61 @@ versions correspond to the extension migration chain
 
 ## Unreleased
 
+## v4.5.0 — 2026-06-17
+
+### 0.100.0
+
+**Document/note reindex protocol.** A document's (or note's) SVPOR
+extraction — the subjects, verbs, and SVO statements minted from its text —
+is written once, at ingest. It rots as the graph's vocabulary grows (an old
+document never links to subjects/verbs minted later) and never improves if
+the first extraction was weak. 0.100.0 adds the database half of a background
+reindex that re-derives a document's graph footprint against the current
+graph — the documents/notes analogue of the 0.99.0 skill reindex. Core never
+calls a model; it exposes a claim → apply contract an external worker drives.
+
+- **`malu$document`** gains `last_indexed` / `last_indexed_model` (the
+  watermark that stops repeat work, plus a hook for migrating to a cheaper
+  model later), mirroring `malu$skill_package`.
+- **`maludb_memory_reindex_claim`** (per-schema facade over
+  `_document_reindex_claim_for_schema`): a registry-aware staleness scan —
+  never indexed, older than `p_max_age`, or older than `max(created_at)` over
+  the tenant's subjects/verbs — returning the stored `content_text` so the
+  worker can re-extract. Optional `p_source_types` scopes (e.g. notes only).
+  Read-only: `maludb_memory_auditor` gets EXECUTE.
+- **`maludb_memory_reindex_apply`** (over `_document_reindex_apply_for_schema`):
+  replaces the document's `$source`-anchored statement footprint, then
+  re-ingests the fresh extraction with the `document` section stripped and the
+  source id pinned to the existing document, so every `$source` edge re-links
+  to it with no duplicate document. Shared subjects/verbs merge; entity-card
+  embeddings refresh via the 0.95.0 dirty-queue triggers. Stamps `last_indexed`.
+  Curator-only in `maludb_public`. No change to the ingest path was needed —
+  re-ingest is already idempotent (subjects/verbs/statements/attributes upsert
+  by key; relationship inserts are caught per-row).
+- `_01000` facade builder wired into `enable_memory_schema` (object count
+  153 → 155).
+
+### 0.99.0
+
+**Skill reindex protocol.** A skill's discovery tags (subjects/verbs/keywords)
+are written once, at registration, from whatever the API extractor produced;
+they go stale as the SVPOR vocabulary grows and never improve if the first
+extraction was weak, silently degrading `find_skill` to the `+10` full-text
+fallback. 0.99.0 adds the database half of a background reindex.
+
+- **`malu$skill_package`** gains `last_indexed` / `last_indexed_model`.
+- **`maludb_skill_reindex_claim`** (per-schema facade over
+  `_skill_reindex_claim_for_schema`): stalest-first, registry-aware scan
+  returning the skill body plus its current tags. Read-only: auditor gets
+  EXECUTE.
+- **`maludb_skill_reindex_apply`** (over `_skill_reindex_apply_for_schema`):
+  a replace-`extracted` rewrite of the subject/verb/keyword tags that
+  preserves curator `manual` tags and stamps `last_indexed`. The
+  `last_indexed` UPDATE survives the 0.97.0 content-immutability guard (it
+  only freezes content columns). Curator-only in `maludb_public`.
+- `_0990` facade builder wired into `enable_memory_schema` (object count
+  151 → 153).
+
 ### 0.98.0
 
 **Note retrieval by subject/verb.** Notes ingested through the memory
