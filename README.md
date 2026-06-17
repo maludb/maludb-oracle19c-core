@@ -13,7 +13,7 @@ with vector search reserved for the query classes that genuinely need it.
 
 | | |
 |---|---|
-| Version | **0.98.0** (extension) — **note retrieval by subject/verb**: one-call `maludb_note_search` (subject-pattern + verb-exact/verb-like filters over extracted SVO edges, both statement→document rails, one row per note with matched edges aggregated) and deterministic `maludb_note_query_parse` free-text parsing against the tenant verb catalog. On 0.97.0 **agent-skill distribution**: skills become immutable, multi-file, distributable artifacts so Claude Agent Skills (SKILL.md bundles) can be ingested, discovered, and shared across teams. New `skill` entity subject type, `bundle_hash`/`frontmatter_jsonb` content identity, `malu$skill_file` bundle manifest, one-call `maludb_skill_register` (bundle-hash dedupe, extracted discovery tags, divergent fork lineage, supersession of non-materially-different parents), content-immutability guard, and a `fork_skill` fix (forks now copy the markdown body + bundle). Builds on 0.96.0 event-kind subject types (`docs/extraction-prompt-0.96.0.md`) and the 0.95.0 "semantic spine". Latest release tag `v4.4.0` shipped extension 0.96.0 on 2026-06-09. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
+| Version | **0.99.0** (extension) — **skill reindex protocol**: a background worker re-derives a skill's discovery tags (subjects/verbs/keywords) against the current knowledge graph — `maludb_skill_reindex_claim` (stalest-first, registry-aware staleness scan returning the skill body + current tags) → `maludb_skill_reindex_apply` (replace-`extracted`, preserving curator `manual` tags), with `last_indexed`/`last_indexed_model` watermarks on `malu$skill_package`; core never calls a model (a `claim → apply` contract an external worker drives, mirroring the 0.95.0 dirty-queue split). On 0.98.0 **note retrieval by subject/verb**: one-call `maludb_note_search` (subject-pattern + verb-exact/verb-like filters over extracted SVO edges, both statement→document rails, one row per note with matched edges aggregated) and deterministic `maludb_note_query_parse` free-text parsing against the tenant verb catalog. On 0.97.0 **agent-skill distribution**: skills become immutable, multi-file, distributable artifacts so Claude Agent Skills (SKILL.md bundles) can be ingested, discovered, and shared across teams. New `skill` entity subject type, `bundle_hash`/`frontmatter_jsonb` content identity, `malu$skill_file` bundle manifest, one-call `maludb_skill_register` (bundle-hash dedupe, extracted discovery tags, divergent fork lineage, supersession of non-materially-different parents), content-immutability guard, and a `fork_skill` fix (forks now copy the markdown body + bundle). Builds on 0.96.0 event-kind subject types (`docs/extraction-prompt-0.96.0.md`) and the 0.95.0 "semantic spine". Latest release tag `v4.4.0` shipped extension 0.96.0 on 2026-06-09. V4 acceptance suite: `scripts/maludb-fieldtest-v4` walks every V4 surface end-to-end; `bench/v4/run-bench` publishes recall + latency baselines; `docs/v4/acceptance-matrix.md` maps plan §12 criteria to test artefacts. |
 | Test suite | **91 pg_regress targets** on PG 17 plus restd, realtimed, CLI, libmaludb v0.2, and pageindexd parser smoke checks |
 | Drivers | Python, Node.js, PHP, C — all four validated against the live extension |
 | External services | `maludb_modeld` (model gateway) + `maludb_mc2dbd` (database MCP listener) + `mcp-broker` (external-tool MCP broker) + `maludb-restd` (V3 REST gateway) + `maludb-realtimed` (V3 SSE event stream) + `maludb-pageindexd` (V4 PageIndex / ChatIndex builder) |
@@ -115,7 +115,7 @@ remaining steps from this `maludb-core` checkout — that's where the
 sudo -u postgres psql -d maludb -tAc "SELECT maludb_core.maludb_core_version()"
 ```
 
-You should see exactly: `0.98.0`
+You should see exactly: `0.99.0`
 
 **3. Walk through the first scenario (optional).**
 
@@ -202,7 +202,7 @@ You should see one row:
 ```
  schema_name | enabled_version | object_count
 -------------+-----------------+--------------
- app         | 0.98.0          |          151
+ app         | 0.99.0          |          153
 ```
 
 **5. Verify the schema works as the application user.**
