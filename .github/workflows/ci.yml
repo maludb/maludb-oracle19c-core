@@ -56,7 +56,7 @@ jobs:
       - name: Relax local pg_hba to trust (CI only)
         run: |
           set -euxo pipefail
-          sudo sed -i -E 's|^local[[:space:]]+all[[:space:]]+(all|postgres)[[:space:]]+peer$|local all all trust|' "$PG_HBA"
+          sudo sed -i -E 's#^local[[:space:]]+all[[:space:]]+(all|postgres)[[:space:]]+peer$#local all all trust#' "$PG_HBA"
           sudo systemctl reload postgresql@${{ matrix.pg }}-main
           psql -h /var/run/postgresql -U postgres -c "SELECT version();"
 
@@ -152,7 +152,7 @@ jobs:
       - name: Relax local pg_hba to trust (CI only)
         run: |
           set -euxo pipefail
-          sudo sed -i -E 's|^local[[:space:]]+all[[:space:]]+(all|postgres)[[:space:]]+peer$|local all all trust|' "$PG_HBA"
+          sudo sed -i -E 's#^local[[:space:]]+all[[:space:]]+(all|postgres)[[:space:]]+peer$#local all all trust#' "$PG_HBA"
           sudo systemctl reload postgresql@17-main
 
       - name: Build maludb_core with -fsanitize=address,undefined
