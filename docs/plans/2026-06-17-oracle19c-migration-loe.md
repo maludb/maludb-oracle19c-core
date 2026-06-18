@@ -112,10 +112,20 @@ triggers, no `pg_cron`, no `LISTEN/NOTIFY`, no GIN/GiST/`EXCLUDE`, no FDW/dblink
 PL/Python/PL/Perl, no materialized views, no partitioning, no generated columns.
 
 ### In-scope C functions → Oracle
-| C file | LOC / fns | Uses | Oracle target |
+
+> **DECIDED (2026-06-17): PL/SQL only — no Oracle JVM (OJVM).** Rationale: supportability on a
+> frozen, locked-down legacy box. The only thing that would force Java — native asymmetric JWT
+> verification — is **not in the codebase** (`maludb_jwt_verify` is **HS256-only**;
+> RS256/ES256/EdDSA raise "not yet implemented", `src/maludb_auth.c:478-485`), can't cover
+> EdDSA on 19c's Java 8 anyway, and OJVM adds patch/compliance surface and a component
+> dependency that may not be installed. **Escape hatch:** if asymmetric JWT verification ever
+> ships upstream and is needed, push it to the **external/app tier** (same philosophy as vector
+> search) — keep the DB on HMAC via `DBMS_CRYPTO`; do **not** enable OJVM.
+
+| C file | LOC / fns | Uses | Oracle target (PL/SQL only) |
 |---|---|---|---|
-| `maludb_auth.c` | 488 / 2 | OpenSSL HMAC/SHA (JWT) | `DBMS_CRYPTO.MAC` (HMAC-SHA256/512) + PL/SQL JWT assembly |
-| `maludb_secret.c` | 321 / 1 | **libcurl** (HTTP secret fetch) | `UTL_HTTP` + network ACL (`DBMS_NETWORK_ACL_ADMIN`) |
+| `maludb_auth.c` | 488 / 2 | OpenSSL HMAC/SHA; **HS256-only** JWT | `DBMS_CRYPTO.MAC` (HMAC-SHA256); base64url via `UTL_ENCODE` + char-swap; claims via native JSON; key lookup via `SELECT`; **hand-rolled constant-time compare** (replaces `CRYPTO_memcmp`) |
+| `maludb_secret.c` | 321 / 1 | **libcurl** HTTP + `file://` fetch | `https://` → `UTL_HTTP` + network ACL (`DBMS_NETWORK_ACL_ADMIN`) + Oracle wallet for TLS. `file://` → `UTL_FILE` via `DIRECTORY` object. **Caveat:** `UTL_FILE` cannot check file owner/mode, so the C resolver's "refuse world-readable secret file" hardening must be enforced via `DIRECTORY` grants + OS-managed permissions instead. |
 | `maludb_atomic.c` | 319 / 2 | SPI | PL/SQL + `SELECT … FOR UPDATE` / autonomous txn |
 | `maludb_type.c` | 166 / 4 | custom type I/O | Oracle OBJECT type or relational columns |
 | `maludb_search.c` | 307 / 1 | SPI search | PL/SQL; Oracle Text if full-text |
@@ -128,7 +138,7 @@ PL/Python/PL/Perl, no materialized views, no partitioning, no generated columns.
 - Rebrand repo identity (README, `LICENSE` headers, control/Makefile removal plan).
 - Stand up Oracle 19c on RHEL dev instance; pick migration tool (Liquibase or SQLcl) and test framework (**utPLSQL**).
 - Land `scripts/sync-upstream.sh` + `docs/UPSTREAM_SYNC.md` + scheduled drift-check CI.
-- Decide PL/SQL vs Java for the 5 C functions (lean PL/SQL + `DBMS_CRYPTO`/`UTL_HTTP`).
+- ~~Decide PL/SQL vs Java for the 5 C functions~~ → **Decided: PL/SQL only** (`DBMS_CRYPTO`/`UTL_HTTP`/`UTL_FILE`; no OJVM). See §5.
 
 **Phase 1 — Schema & vector excision (3–5 wk)**
 - Convert DDL with the type-mapping table; establish JSON-in-CLOB and collection conventions.
@@ -165,8 +175,14 @@ PL/Python/PL/Perl, no materialized views, no partitioning, no generated columns.
 
 ---
 
-## 8. Open questions
+## 8. Decisions & open questions
+
+**Decided**
+- **C-function target: PL/SQL only — no OJVM** (2026-06-17). See §5 for rationale and the asymmetric-JWT escape hatch.
+
+**Open**
 - External vector seam: what's the integration contract (sync call vs queue; who owns embedding lifecycle)?
-- C-function target: PL/SQL-only acceptable, or is the JVM available in the Oracle instance (enables Java stored procs)?
+- Asymmetric JWT roadmap: is RS256/ES256 expected upstream, and if so must it be verified **in-DB** (forces the external-tier seam) or is the app/external tier acceptable?
+- `secret` resolver: is the **`file://`** path used in production (owner/perm hardening), or **`https://`** only?
 - Network ACLs: is outbound `UTL_HTTP` from the DB permitted in the target environment (for the secret resolver)?
 - Migration framework preference: Liquibase vs SQLcl/`liquibase`-via-SQLcl vs Flyway?
