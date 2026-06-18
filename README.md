@@ -1,3 +1,12 @@
+<!-- ORACLE-PORT-BANNER -->
+> ⚠️ **This is `maludb-oracle19c-core` — the Oracle 19c (RHEL) port of maludb-core.**
+> The PostgreSQL extension files below (`src/*.c`, `sql/`, `*.control`, `Makefile`) are the
+> **porting baseline** (the source we port *from*), **not** Oracle deliverables.
+> **Before doing anything, read [`docs/plans/2026-06-17-oracle19c-NEXT-SESSION.md`](docs/plans/2026-06-17-oracle19c-NEXT-SESSION.md)**
+> and the plan [`docs/plans/2026-06-17-oracle19c-migration-loe.md`](docs/plans/2026-06-17-oracle19c-migration-loe.md).
+> `upstream` remote = the live PostgreSQL `maludb-core` (sync source). The README below is inherited from it.
+<!-- /ORACLE-PORT-BANNER -->
+
 # MaluDB
 
 MaluDB is a memory DBMS for long-term institutional memory, human-AI
