@@ -77,7 +77,7 @@ a scheduled GitHub Action opens a tracking issue when contract files change upst
 | Vector removal surgery | 1–2 wk | Strip vector columns/fns across 20 files; external seam (subtractive) |
 | Client drivers ×4 | 4–6 wk | Connectivity + dialect; thin (~3.4K LOC) |
 | Bitemporal + security/session model | 2–3 wk | Temporal Validity; `SYS_CONTEXT`/VPD |
-| Install/upgrade re-tooling | 2–4 wk | 140 versioned extension scripts → Liquibase/Flyway/SQLcl |
+| Install/upgrade re-tooling | 2–4 wk | 140 versioned extension scripts → SQLcl (fallback: bespoke wrapper, §9) |
 | Test harness + re-baseline | 4–8 wk | Rebuild 93 `pg_regress` suites on utPLSQL/SQLcl |
 | **Total** | **30–52 wk (~8–13 person-months)** | |
 
@@ -136,7 +136,7 @@ PL/Python/PL/Perl, no materialized views, no partitioning, no generated columns.
 
 **Phase 0 — Foundation (1 wk)**
 - Rebrand repo identity (README, `LICENSE` headers, control/Makefile removal plan).
-- Stand up Oracle 19c on RHEL dev instance; pick migration tool (Liquibase or SQLcl) and test framework (**utPLSQL**).
+- Stand up Oracle 19c on RHEL dev instance; install **SQLcl** (primary migration tool, §9) and test framework (**utPLSQL**).
 - Land `scripts/sync-upstream.sh` + `docs/UPSTREAM_SYNC.md` + scheduled drift-check CI.
 - ~~Decide PL/SQL vs Java for the 5 C functions~~ → **Decided: PL/SQL only** (`DBMS_CRYPTO`/`UTL_HTTP`/`UTL_FILE`; no OJVM). See §5.
 
@@ -144,7 +144,7 @@ PL/Python/PL/Perl, no materialized views, no partitioning, no generated columns.
 - Convert DDL with the type-mapping table; establish JSON-in-CLOB and collection conventions.
 - Strip vector columns/types/functions (20 files) and define the **external-vector seam**
   (store embedding row keys; logic calls out to the external vector service).
-- Stand up the Liquibase/SQLcl changelog as the new install/upgrade model.
+- Stand up the SQLcl changelog as the new install/upgrade model (fallback: bespoke wrapper, §9).
 
 **Phase 2 — Core PL/SQL conversion (12–20 wk)**
 - Port modules in dependency order; group into Oracle **packages** by domain (auth, ingestion, retrieval, governance, lifecycle, …).
@@ -179,10 +179,38 @@ PL/Python/PL/Perl, no materialized views, no partitioning, no generated columns.
 
 **Decided**
 - **C-function target: PL/SQL only — no OJVM** (2026-06-17). See §5 for rationale and the asymmetric-JWT escape hatch.
+- **Migration tool: SQLcl primary; bespoke in-repo wrapper as fallback** (2026-06-17). See §9.
 
 **Open**
 - External vector seam: what's the integration contract (sync call vs queue; who owns embedding lifecycle)?
 - Asymmetric JWT roadmap: is RS256/ES256 expected upstream, and if so must it be verified **in-DB** (forces the external-tier seam) or is the app/external tier acceptable?
 - `secret` resolver: is the **`file://`** path used in production (owner/perm hardening), or **`https://`** only?
 - Network ACLs: is outbound `UTL_HTTP` from the DB permitted in the target environment (for the secret resolver)?
-- Migration framework preference: Liquibase vs SQLcl/`liquibase`-via-SQLcl vs Flyway?
+
+---
+
+## 9. Migration tooling decision (2026-06-17)
+
+**Primary: Oracle SQLcl.** Free, Oracle-native, vendor-supported, embeds Liquibase, handles
+PL/SQL/`/` terminators, and offers `update-sql` (dry-run-style review for DBA handoff) and
+drift/diff with no governance paywall. In an Oracle shop it is usually already approved/present.
+
+**Why not Flyway:** the governance features a regulated legacy shop actually wants — drift
+detection, dry-run review, invalid-object detection, "support for older DB versions" (relevant
+since 19c is a frozen/ageing target), and vendor support — are all **paid (Enterprise)**.
+"Free Flyway" tends to converge on "paid Flyway" for this exact use case; and Flyway/Redgate is
+a third-party product a client may require approval for.
+
+**Fallback: bespoke in-repo wrapper — to eliminate any separately-approvable third-party tool.**
+Driver: some client environments require sign-off for *any* third-party tool (SQLcl included).
+The fallback must therefore depend **only on tooling that ships inside Oracle itself**:
+- **Execution delegated to SQL\*Plus** (bundled with every Oracle DB/client; handles PL/SQL `/`
+  terminators natively) — so we never reimplement Oracle statement parsing/execution, *and* add
+  no approvable dependency.
+- Orchestration (discovery of `V…__`/`R…__` files, version ordering, a `schema_history` tracking
+  table, checksums, `migrate`/`info`/`validate`/`baseline`, a `DBMS_LOCK` advisory lock) in a
+  small **shell or Python** script — both standard on RHEL, neither a separate product.
+- **Scope discipline (YAGNI):** this is the "Tier 1" thin orchestrator only. Do **not** build a
+  self-contained SQL execution engine / PL/SQL splitter (Tier 2) — that re-creates a commodity,
+  owns a parser forever, and contradicts the supportability rationale behind the PL/SQL-only call.
+- Estimated build: ~1–2 sessions to a tested-on-real-Oracle v1 (~400–800 LOC), if invoked.
